@@ -1,0 +1,10 @@
+require(sf); sf_use_s2(FALSE)
+x <- readRDS("D:/CIAT_DEFORESTATION/DATA/OneDrive_1_17-5-2024/protected areas.RDS")
+#plot(x)
+plot(st_geometry(x),add=F,axes = TRUE)
+data_dir  <- "D:/CIAT_DEFORESTATION/DATA/OneDrive_1_17-5-2024"
+base <- sf::st_read(paste0(data_dir,"/","ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp"))
+plot(sf::st_geometry(base),add=F,axes = TRUE)
+plot(sf::st_geometry(x),add=T,axes = TRUE,pch = 14,col = "red")
+result <- sf::st_difference(x = base ,y = x) 
+plot(st_geometry(result))
