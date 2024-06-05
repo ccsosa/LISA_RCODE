@@ -68,7 +68,7 @@ for(i in 1:nrow(x_shp)){
   
   #counting fatalities and events using sum of fatalities and number of columns 
   #i <- 1
-  x1 <- sf::st_intersection(data2,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),])  
+  x1 <- sf::st_intersection(data2,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])  
   if(nrow(x1)>0){
     x_shp$n_fatalities[[i]] <- sum(x1$FATALITIES)
     x_shp$n_events[[i]] <- nrow(x1)
@@ -94,7 +94,7 @@ for(i in 1:nrow(x_shp)){
   
   #counting fatalities and events using sum of fatalities and number of columns 
   #i <- 1
-  x1 <- sf::st_intersection(data2_total,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),])  
+  x1 <- sf::st_intersection(data2_total,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])  
   if(nrow(x1)>0){
     x_shp$n_fatalities_total[[i]] <- sum(x1$FATALITIES)
     x_shp$n_events_total[[i]] <- nrow(x1)
@@ -111,7 +111,7 @@ close(pb)
 #saving shapefile 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)
-sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240523.shp")
+sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240604.shp")
 write.csv(data.frame(VARNAME=colnames(x_shp),
                      abbrev=colnames(x_shp2)),
           "D:/CIAT_DEFORESTATION/RESULTS/x_shp_abbr_metadata.csv")

@@ -4,124 +4,143 @@ require(readxl);require(dplyr);require(geodata);require(sf);require(matrixStats)
 #require(rgeoda);require(sf);require(terra)
 #getting folder
 data_dir  <- "D:/CIAT_DEFORESTATION/DATA/OneDrive_1_17-5-2024"
+data_dir_COVER <- "D:/CIAT_DEFORESTATION/DATA/NEW"
 #geting shapefile
 #loading shapefile from GADM3
-x_shp <- geodata::gadm(country = "KEN",level = 2,
-                       path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
+# x_shp <- geodata::gadm(country = "KEN",level = 3,
+#                        path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
+x_shp <- sf::st_read("D:/CIAT_DEFORESTATION/DATA/NEW/KEN_ILRI/gadm41_KEN_3.shp")
 x_shp <- sf::st_as_sf(x_shp)
+#sf::write_sf(x_shp,"D:/CIAT_DEFORESTATION/DATA/NEW/GADM/KEN_ADM3.shp")
+
+base <- sf::st_read("D:/CIAT_DEFORESTATION/DATA/NEW/KEN_ILRI/gadm41_KEN_0.shp")
+#to use area
+sf_use_s2(T)
+#calculating counties area
+#plot(st_geometry(base))
 area <- (as.numeric(st_area(x_shp)))*(1e-6/1)
 x_shp$area <- area
 #adding adm1 and adm2 in one to join information later
-x_shp$ID_NORM <- paste0(x_shp$NAME_1,"_",x_shp$NAME_2)
+#x_shp$ID_NORM <- paste0(x_shp$,"_",x_shp$NAME_2)
 #save shp
-sf::write_sf(x_shp,"D:/CIAT_DEFORESTATION/DATA/NEW/GADM/KEN_ADM2.shp")
+sf::write_sf(x_shp,"D:/CIAT_DEFORESTATION/DATA/NEW/ILRI/KEN_ADM3.shp")
 ################################################################################
 #loading tree cover loss
-data <- readxl::read_xlsx(paste0(data_dir,"/","KEN.xlsx"),
-                          sheet = "Subnational 2 tree cover loss",col_names = T)
-data <- data[which(data$threshold==30),]
-data$ID_NORM <- paste0(data$subnational1,"_",data$subnational2)
-
-#count <- ne_countries(returnclass = "sf",scale = "large")
-#base <- sf::st_read(paste0(data_dir,"/","ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp"))
-
-#data_filtered <- as.data.frame(data[,c(2,3,6,7,8,31)])#2018
-data_filtered <- as.data.frame(data[,c(2,3,6,7,8,31)])#2015
-#not matching
-anti_join(y = data.frame(NAME=x_shp$ID_NORM),
-          x = data.frame(NAME=data$ID_NORM),
-)
-#2015-2020
-#data_filtered$tc_loss_med_18_20 <- rowMedians(cbind(data$tc_loss_ha_2018,data$tc_loss_ha_2019,data$tc_loss_ha_2020))
-# data_filtered$tc_loss_med_15_20 <- matrixStats::rowMedians(cbind(
-#                                                     data$tc_loss_ha_2015,
-#                                                     data$tc_loss_ha_2016,
-#                                                     data$tc_loss_ha_2017,
-#                                                     data$tc_loss_ha_2018,
-#                                                     data$tc_loss_ha_2019,
-#                                                     data$tc_loss_ha_2020))
-
-data_filtered$tc_loss_med_11_20 <- matrixStats::rowMedians(cbind(
-                                                    data$tc_loss_ha_2011,
-                                                    data$tc_loss_ha_2012,
-                                                    data$tc_loss_ha_2013,
-                                                    data$tc_loss_ha_2014,
-                                                    data$tc_loss_ha_2015,
-                                                    data$tc_loss_ha_2016,
-                                                    data$tc_loss_ha_2017,
-                                                    data$tc_loss_ha_2018,
-                                                    data$tc_loss_ha_2019,
-                                                    data$tc_loss_ha_2020))
-################################################################################
-#loading Subnational 2 carbon data
-data2 <- readxl::read_xlsx(paste0(data_dir,"/","KEN.xlsx"),
-                           sheet = "Subnational 2 carbon data",col_names = T)
-data2 <- data2[which(data2$umd_tree_cover_density_2000__threshold==30),]
-data2$ID_NORM <- paste0(data2$subnational1,"_",data2$subnational2)
-#count <- ne_countries(returnclass = "sf",scale = "large")
-#base <- sf::st_read(paste0(data_dir,"/","ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp"))
-#filtering
-#data_filtered2 <- as.data.frame(data2[,c(2,3,5,6,7,33)])#2018
-data_filtered2 <- as.data.frame(data2[,c(2,3,5,6,7,33)])#2015
-#not matching
-anti_join(y = data.frame(NAME=x_shp$ID_NORM),
-          x = data.frame(NAME=data2$ID_NORM),
-)
-#data_filtered2$carbon_gross_18_20 <- matrixStats::rowMedians(cbind(data2$gfw_forest_carbon_gross_emissions_2018__Mg_CO2e,
-#data2$gfw_forest_carbon_gross_emissions_2018__Mg_CO2e,data2$gfw_forest_carbon_gross_emissions_2018__Mg_CO2e))
-#2015-2020
-# data_filtered2$carbon_gross_15_20 <- matrixStats::rowMedians(cbind(
-#   data2$gfw_forest_carbon_gross_emissions_2015__Mg_CO2e,
-#   data2$gfw_forest_carbon_gross_emissions_2016__Mg_CO2e,
-#   data2$gfw_forest_carbon_gross_emissions_2017__Mg_CO2e,
-#   data2$gfw_forest_carbon_gross_emissions_2018__Mg_CO2e,
-#   data2$gfw_forest_carbon_gross_emissions_2019__Mg_CO2e,
-#   data2$gfw_forest_carbon_gross_emissions_2020__Mg_CO2e))
-#2011-2020
-data_filtered2$carbon_gross_11_20 <- matrixStats::rowMedians(cbind(
-  data2$gfw_forest_carbon_gross_emissions_2011__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2012__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2013__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2014__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2015__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2016__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2017__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2018__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2019__Mg_CO2e,
-  data2$gfw_forest_carbon_gross_emissions_2020__Mg_CO2e))
-
 
 ################################################################################
-#put into a file
-vars_i <- c("extent_2000_ha", #data_filtered
-            "extent_2010_ha", #data_filtered
-            "gain_2000-2020_ha", #data_filtered
-            "tc_loss_med_11_20", #data_filtered
-            "umd_tree_cover_extent_2000__ha", #data_filtered2,
-            #"gfw_aboveground_carbon_stocks_2000__Mg_C",
-            "carbon_gross_11_20" #data_filtered2
-            )
-#Adding information by cell and variable
-for(i in 1:length(vars_i)){
-  #i <- 1
-  #new variable in NA
-  x_shp[,vars_i[[i]]] <- NA
-  #print(paste("i -",i))
+#FOREST LOSS
+#lossyear_40N_080W.tif
+#base <- sf::st_read(paste0(data_dir,"/","ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp"))
+#Calculating deforestation year loss
+if(!file.exists("D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/lossyear.tif")){
+  x1 <- terra::rast("
+https://storage.googleapis.com/earthenginepartners-hansen/GFC-2023-v1.11/Hansen_GFC-2023-v1.11_lossyear_10N_030E.tif")
+  x2 <- terra::rast("
+https://storage.googleapis.com/earthenginepartners-hansen/GFC-2023-v1.11/Hansen_GFC-2023-v1.11_lossyear_10N_040E.tif")
+  x3 <- terra::rast("
+https://storage.googleapis.com/earthenginepartners-hansen/GFC-2023-v1.11/Hansen_GFC-2023-v1.11_lossyear_00N_030E.tif")
+  x4 <- terra::rast("
+https://storage.googleapis.com/earthenginepartners-hansen/GFC-2023-v1.11/Hansen_GFC-2023-v1.11_lossyear_00N_040E.tif")
+#joining, merging and masking
+    s <- terra::sprc(x1, x2,x3,x4)
+  m <- terra::merge(s)
+  m2 <- terra::crop(m,base)
+  m3a <- terra::mask(m2,base)
   
-  for(j in 1:nrow(x_shp)){
-    #print(paste("i -",i,"/ j -",j))
-    #i <5 means take from the first sheet and > 5 from the second sheet
-    if(i <5){
-      x_shp[j,vars_i[i]] <- 
-        data_filtered[,vars_i[i]][which(data_filtered$ID_NORM==x_shp$ID_NORM[[j]])] 
+  terra::writeRaster(m3a,"D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/lossyear.tif")  
+} else {
+  m3a <- terra::rast("D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/lossyear.tif")
+}
+
+m4 <- m3a
+# m4[which(m4[]<10)] <- NA
+# m4[which(m4[]>21)] <- NA
+################################################################################
+#obtaining area affected per year
+raster_LU_List <- list()
+pb <-
+  utils::txtProgressBar(min = 0,
+                        max = nrow(x_shp),
+                        style = 3)
+
+for(i in 1:nrow(x_shp)){
+  #i <- 1
+  x1 <- terra::crop(m4,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],mask=T)
+  x1 <- terra::mask(x1,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
+  #calculating area by raster value
+  x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=T)
+  x_Ext$GID_3 <- x_shp$GID_3[[i]]
+  utils::setTxtProgressBar(pb, i)
+  raster_LU_List[[i]] <- x_Ext
+};rm(i)
+close(pb)
+
+
+raster_LU_List2 <- do.call(rbind,raster_LU_List)
+
+#saving raw data
+write.csv(raster_LU_List2,paste0(data_dir_COVER,"/KENYA_HANSSN_VALUES_ILRIC.csv"),row.names = F)
+#removing years 2010,2021,2022,2023
+raster_LU_List3 <- raster_LU_List2[which(raster_LU_List2$value>10),]
+raster_LU_List3 <- raster_LU_List3[which(raster_LU_List3$value<21),]
+
+
+years <- unique(raster_LU_List3$value)
+df_to_see <- as.data.frame(matrix(ncol=length(years)+1,nrow = nrow(x_shp)))
+colnames(df_to_see) <- c("ADM2_PCODE",years)
+df_to_see[,1] <- x_shp$ADM2_PCODE
+
+
+#adding data data to shapefile
+
+for(i in 1:nrow(x_shp)){
+  #print(paste0("i: ",i))
+  x1 <- raster_LU_List3[which(raster_LU_List3$GID_3==x_shp$GID_3[[i]]),]
+  for(j in 2:ncol(df_to_see)){
+    #print(paste0("i: ",i," j: ",j))
+    x_y_j <-x1$area[which(x1$value==years[[j-1]])]
+    if(length(x_y_j)>0){
+      df_to_see[i,j] <- x_y_j  
     } else {
-      x_shp[j,vars_i[i]] <- 
-        data_filtered2[,vars_i[i]][which(data_filtered2$ID_NORM==x_shp$ID_NORM[[j]])]     
+      df_to_see[i,j] <-NA #0
     }
   };rm(j)
 };rm(i)
-################################################################################
-#cover loss median by area to get proportion 
+
+
+df_to_see$mean <- rowMeans(df_to_see[,as.character(years)],na.rm = T)
+df_to_see$sd <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years)]),na.rm = T)
+df_to_see$median <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years)]),na.rm = T)
+write.csv(df_to_see,paste0(data_dir_COVER,"/KENYA_HANSSEN_VALUES_WIDE_ILRIC.csv"),row.names = F,na = "")
+
+x_shp$tc_loss_med_11_20 <- df_to_see$median
 x_shp$tc_loss_med_prop <- x_shp$tc_loss_med_11_20/(x_shp$area)*(1/100)
+################################################################################
+###ADDING INFO FROM ABOVE GROUND BIOMASS (Mg/Ha()
+A1 <- terra::rast("D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/AGB_2010.tif")  
+A2 <- terra::rast("D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/AGB_2020.tif")  
+#2010-2020
+#A_DIF <- ((A2-A1)/A1)*100
+A_DIF_1 <- A1-A2
+
+
+x_shp$ABG_2010_2020 <- NA
+pb <-
+  utils::txtProgressBar(min = 0,
+                        max = nrow(x_shp),
+                        style = 3)
+for(i in 1:nrow(x_shp)){
+  #calculating raster value  by county
+  x_Ext <- terra::extract(A_DIF_1,
+                          x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
+                          na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
+  #x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=F)
+  x_shp$ABG_2010_2020[[i]] <- as.numeric(x_Ext)
+  utils::setTxtProgressBar(pb, i)
+};rm(i)
+
+close(pb)
+
+################################################################################
 save.image("D:/CIAT_DEFORESTATION/RESULTS/1_FOREST.RData")
 #write_sf(x_shp,"D:/CIAT_DEFORESTATION/DATA/NEW/GADM/KEN_ADM2_AC.shp")

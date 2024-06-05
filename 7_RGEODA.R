@@ -2,8 +2,9 @@ rm(list = ls());gc()
 #load libraries
 require(readxl);require(dplyr);require(geodata);
 require(sf);require(matrixStats);require(parallel);
+require(ggpmisc)
 require(ggplot2);require(MetBrewer);require(corrplot);
-require(factoextra);require(FactoMineR);require(xlsx);require(rgeoda)
+require(factoextra);require(FactoMineR);require(xlsx);require(rgeoda);library(car)
 #data_dir <- "D:/CIAT_DEFORESTATION/RESULTS"
 #outdir
 #folder to save files
@@ -17,7 +18,10 @@ if(!dir.exists(paste0(out_dir,"/CLUSTERS_SUMMARIES"))){
 if(!dir.exists(paste0(out_dir,"/PLOTS"))){
   dir.create(paste0(out_dir,"/PLOTS"))
 }
-
+#create plot biplot folder
+if(!dir.exists(paste0(out_dir,"/PLOTS/BIPLOT"))){
+  dir.create(paste0(out_dir,"/PLOTS/BIPLOT"))
+}
 #create pval folder
 if(!dir.exists(paste0(out_dir,"/PVAL"))){
   dir.create(paste0(out_dir,"/PVAL"))
@@ -35,9 +39,10 @@ if(!dir.exists(paste0(out_dir,"/SHP"))){
 #load
 load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
 ################################################################################
-vars <- c("gain_2000-2020_ha",
+vars <- c(#"gain_2000-2020_ha",
           "tc_loss_med_11_20",
-          "carbon_gross_11_20",
+          "ABG_2010_2020",
+          #"carbon_gross_11_20",
           "tc_loss_med_prop",
           "protarea_area",            
           "protarea_prop",
@@ -64,12 +69,13 @@ vars <- c("gain_2000-2020_ha",
           "LUC_emissions"
 )
 
-captions <- c("Forest gain (ha) (2000-2020)",
-              "Tree cover loss (ha) (Median: 2011-2020)",
-              "Forest carbon gross emissions (Mg CO2e) (Median: 2011-2020)",
+captions <- c(#"Forest gain (ha) (2000-2020)",
+              "Tree cover loss (km2) (Median: 2011-2020)",
+              "Average forest above-ground biomass difference (Mg/ha)(2010-2020)",
+              #"Forest carbon gross emissions (Mg CO2e) (Median: 2011-2020)",
               "Tree cover loss proportion per county area (2011-2020)",
               "Protected area (km2)",            
-              "Protected area proportion per county area",
+              "Protected area proportion per county",
               "Cattle (animal numbers for 2015)",
               "Goats (animal numbers for 2015)",
               "Sheep (animal numbers for 2015)",
@@ -94,7 +100,9 @@ captions <- c("Forest gain (ha) (2000-2020)",
 )
 
 
-
+x_shp_to_csv <- x_shp
+x_shp_to_csv$geometry <- NULL
+write.csv(x_shp_to_csv,paste0(out_dir,"/","TO_CSV.csv"),row.names = F,na = "")
 # #y
 # var_y <- c('n_fatalities')
 # #x
@@ -127,9 +135,11 @@ colors_to_plot <- data.frame(Cluster=c("Not significant",
 #colors_to_plot$Cluster <- factor(colors_to_plot$Cluster,levels = colors_to_plot$Cluster)
 #colors_to_plot$color <- factor(colors_to_plot$color,levels = colors_to_plot$color)
 ################################################################################
-x_shp1 <- geodata::gadm(country = "KEN",level = 1,
-                        path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
+# x_shp1 <- geodata::gadm(country = "KEN",level = 1,
+#                         path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
+x_shp1 <- sf::st_read("D:/CIAT_DEFORESTATION/DATA/NEW/KEN_ILRI/gadm41_KEN_1.shp")
 x_shp1 <- sf::st_as_sf(x_shp1)
+#plot(st_geometry(x_shp1))
 #load("D:/CIAT_DEFORESTATION/RESULTS/4_FOREST_PROCAREA_LI_LUD_CONFLICT.RData")
 #load("D:/CIAT_DEFORESTATION/RESULTS/5_FOREST_LU.RData")
 
@@ -204,14 +214,14 @@ lbls <- rgeoda::lisa_labels(gda_lisa = qsa)
 #col_lisa <- lisa_colors(gda_lisa)
 clrs <- setNames(rgeoda::lisa_colors(gda_lisa = qsa), nm = lbls)
 #FDR
-fdr <- rgeoda::lisa_fdr(gda_lisa = qsa, 0.05)
+#fdr <- rgeoda::lisa_fdr(gda_lisa = qsa, 0.05)
 #fdr
 #get the LIS clusters
-cats <- rgeoda::lisa_clusters(gda_lisa = qsa, cutoff = fdr)
+cats <- rgeoda::lisa_clusters(gda_lisa = qsa)#, cutoff = fdr)
 
 if(sum(cats)>0){
 #cats
-#validating clusters 
+#validating clusters   
 results <- rgeoda::spatial_validation(sf_obj = x_moran, clusters = cats, w = queen_w)
 #results
 #x to y plots
@@ -267,6 +277,7 @@ x_shp_copy$pvals <- pvals
 x_shp_copy$col2 <- NA
 
 
+################################################################################
 #preparing for plotting, adding colors and labels
 for(i in 1:nrow(colors_to_plot)){
   #i <- 1
@@ -279,7 +290,21 @@ for(i in 1:nrow(colors_to_plot)){
 x_shp_copy$col2 <- factor(x_shp_copy$col2,levels = colors_to_plot$color)
 x_shp_copy$CLUSTERS <- factor(x_shp_copy$CLUSTERS,levels = colors_to_plot$Cluster)
 
+################################################################################
+#data to plot xy plot
+var_reg <- x_shp_copy[,c(var_x,var_y)]
+var_reg$geometry <- NULL
+lag_y <- rgeoda::spatial_lag(gda_w =queen_w,df = x_moran[,var_y])
+data_to_plot <- data.frame(x=var_reg[,1],
+                           y=lag_y$Spatial.Lag,
+                           cluster=x_shp_copy$CLUSTERS,
+                           colors=x_shp_copy$col2)
+# Create a regression model
+M <- lm(lag_y$Spatial.Lag ~ var_reg[,1])
+#cf <- coef(M)
+# Plot the data
 
+################################################################################
 #Bivariate Moran plot
 
 #captions to titles
@@ -294,7 +319,52 @@ caption_to_y <- 1:length(captions)*caption_to_y
 caption_to_y <- caption_to_y[caption_to_y!=0]
 var_to_y <- vars[caption_to_y]
 caption_to_y <- captions[caption_to_y]
+################################################################################
+x_lag_plot <- ggplot(data_to_plot,aes(x,y,color = cluster)) +
+  geom_point(aes(colour =cluster)) +
+  scale_color_manual(values = c("Not significant" ="#eeeeee",
+                                "High-High" ="#FF0000",
+                                "Low-Low" ="#0000FF",
+                                "High-Low" ="#a7adf9",
+                                "Low-High" ="#f4ada8",
+                                "Undefined" ="#464646",
+                                "Isolated" ="#999999"))+
+  xlab(caption_to_x)+
+  ylab(paste("Lagged",caption_to_y))+
+  # geom_smooth(aes(colour=cluster), method = "lm") +
+  #geom_smooth(color="black", method = "lm") +
+  
+  #stat_smooth(method="lm",se=F)+
+  annotate("text",x=max(data_to_plot$x)+-2*sd(data_to_plot$x),
+           y=max(data_to_plot$y)-2*sd(data_to_plot$y),
+           label=paste0("I==",round(mean(lms),3)),parse=TRUE)+
+  #geom_smooth()+
+  #stat_poly_line() +
+  # stat_poly_eq(use_label("eq")) +
+  # stat_poly_eq(label.y = 0.9) +
+  #stat_smooth(#formula = lag_y$Spatial.Lag ~ var_reg[,1], 
+  #data=cbind(var_reg[,1],lag_y$Spatial.Lag),
+  #            fullrange = F,
+  #            method = lm,color="black",
+  #            se = F,
+  #            show.legend = T, size=, colour = 'blue')+
+  #
+   geom_abline(intercept = M$coefficients[1],
+               slope=M$coefficients[2])+
+  geom_hline(yintercept = mean(lag_y$Spatial.Lag))+
+  geom_vline(xintercept = mean(var_reg[,1]))
+  #geom_hline(yintercept = mean(var_reg[,1]))+
+  #geom_vline(xintercept = mean(var_reg[,1]))
+#+
+#scale_x_continuous(limits=c(0,70)) +
+#scale_y_continuous(limits=c(0,100)) + 
+#coord_fixed(ratio=70/100)  
 
+ggsave(plot = x_lag_plot, filename = paste0(out_dir,"/PLOTS/BIPLOT/","LISA_PLOT_",var_to_x,"_",var_to_y,".tiff"), 
+       units = 'in', width = 10, height = 8, dpi = 300)
+
+
+################################################################################
 ghmc <- ggplot(x_shp_copy) + 
   geom_sf(data = x_shp_copy, aes(fill=CLUSTERS), col = 'white', lwd = 0.3) + 
   scale_fill_manual(values = c("Not significant" ="#eeeeee",
@@ -378,7 +448,7 @@ dev.off()
 
 ################################################################################
 #save results
-x_data <- x_shp_copy[,c("NAME_1","NAME_2","ID_NORM",var_x,var_y,"CLUSTERS","pvals")]
+x_data <- x_shp_copy[,c("NAME_1","NAME_2","NAME_3","GID_3",var_x,var_y,"CLUSTERS","pvals")]
 x_data <- cbind(x_data,lms)
 if(file.exists(paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/RAWS/",var_to_x,"_",var_to_y,".csv"))){
   print("already saved")
@@ -433,7 +503,9 @@ write.csv(summary_df_List,paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/CLUSTERS_SU
 } else {
   print("NO ASSOCIATIONS FOUND!")
 }
-return(print("DONE!"))
+
+print("DONE!")
+return(ghmc)
 }
 ################################################################################
 
@@ -457,6 +529,27 @@ var_x <- 'tc_loss_med_prop'
 
 
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'tc_loss_med_11_20'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'tc_loss_med_11_20'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+
 
 ################################################################################
 var_y <- 'n_events'
@@ -565,6 +658,17 @@ var_y <- 'n_fatalities'
 #x
 var_x <- 'protarea_area'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'ABG_2010_2020'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'ABG_2010_2020'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
 # 
 # var_y <- 'tc_loss_med_11_20'
 # #x
@@ -588,17 +692,83 @@ LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # 
 ###############################################################################
-xx <- x_shp[,-c(1:16)]
-st_geometry(xx) <- NULL
-res.pca = PCA(xx,scale.unit = T)
-x_H <- HCPC(res.pca, nb.clust = -1, min = 3, max = NULL, graph = TRUE)
-fviz_dend(x_H, 
-          cex = 0.7,                     # Label size
-          palette = "jco",               # Color palette see ?ggpubr::ggpar
-          rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
-          rect_border = "jco",           # Rectangle color
-          labels_track_height = 0.8      # Augment the room for labels
-)
+data_to_cl <- x_shp[c("n_fatalities","tc_loss_med_11_20" ,
+                      "ABG_2010_2020",
+  "cattle_mean" ,
+  #"carbon_gross_11_20" , 
+  "lud_45" ,
+  "LUC_emissions" ,
+  "goat_mean" ,
+  "sheep_mean")]
+data_to_cl$geometry <- NULL
+data_to_cl <- data_to_cl[complete.cases(data_to_cl),]
+data_to_cl <- x_shp[as.numeric(row.names(data_to_cl)),c("n_fatalities","tc_loss_med_11_20" ,
+                                                        "ABG_2010_2020",
+                      "cattle_mean" ,
+                      #"carbon_gross_11_20" , 
+                      "lud_45" ,
+                      "LUC_emissions" ,
+                      "goat_mean" ,
+                      "sheep_mean")]
+queen_w_cl <- rgeoda::queen_weights(data_to_cl)
+wcl_clusters <- skater(4, queen_w_cl, data_to_cl)
+
+###############################################################################
+xx <- x_shp[,-c(1:18)]
+xx$geometry <- NULL
+#colnames(xx) <- captions
+xx <- xx[complete.cases(xx),]
+
+model <- lm(n_fatalities ~
+              #gain_20002020_ha    +
+              tc_loss_med_11_20 +
+              ABG_2010_2020 +
+              #carbon_gross_11_20 +
+              #tc_loss_med_prop +  
+              #protarea_area +
+              #protarea_prop + 
+              cattle_mean +
+              goat_mean + 
+              sheep_mean + 
+              lud_45 + 
+              #Tree cover + 
+              Shrubland +
+              Grassland + 
+              Cropland + 
+              #Built-up               +
+              #Bare/sparse vegetation +
+              #Snow and Ice           +
+              #Permanent water bodies +
+              #Herbaceous wetland     +
+              #Mangroves              +
+              #Moss and lichen        +
+              LUC_emissions, 
+            data = xx)
+#plot(model)
+plot(model, which = 1, main = "Model Fit")
+summary(model)
+#create vector of VIF values
+vif_values <- car::vif(model)
+vif_values
+
+#create horizontal bar chart to display each VIF value
+barplot(vif_values, main = "VIF Values", horiz = T, col = "steelblue",las=2)
+
+vif_values <-vif_values[vif_values < 10]
+#add vertical line at 5
+#abline(v = 5, lwd = 3, lty = 2)
+#row.names(xx) <- NULL#as.character(1:nrow(xx))
+#st_geometry(xx) <- NULL
+#colnames(xx) <- captions
+res.pca = PCA(xx,scale.unit = T,graph = F)
+x_H <- HCPC(res.pca, nb.clust = -1, min = 3, max = NULL, graph = F)
+# fviz_dend(x_H, 
+#           cex = 0.7,                     # Label size
+#           palette = "jco",               # Color palette see ?ggpubr::ggpar
+#           rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
+#           rect_border = "jco",           # Rectangle color
+#           labels_track_height = 0.8      # Augment the room for labels
+# )
 
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 fviz_pca_var(res.pca, col.var = "black")
@@ -613,84 +783,102 @@ fviz_pca_biplot(res.pca, geom.ind = "point",
 
 
 ###############################################################################
-require(caret);require(ranger)
-#lmHeight = lm(n_events~tc_loss_med_11_20+cattle_mean+carbon_gross_11_20, data = x_shp) #Create the linear regression
-set.seed(1)
-
-num_trees = seq(0,10000,50)
-num_trees[1] <- 10
-#m_try = sqrt(5)
-
-RF_list <- list()
-tuning_df <- list()
-x_shp_to <- as.data.frame(x_shp)
-x_shp_to <- x_shp_to[complete.cases(x_shp_to[,c("n_fatalities","tc_loss_med_11_20" ,
-                                                  "cattle_mean" ,
-                                                  "carbon_gross_11_20" , 
-                                                  "lud_45" ,
-                                                  "LUC_emissions" ,
-                                                  "goat_mean" ,
-                                                  "sheep_mean")]),]
+# require(caret);require(ranger)
+# #lmHeight = lm(n_events~tc_loss_med_11_20+cattle_mean+carbon_gross_11_20, data = x_shp) #Create the linear regression
+# set.seed(1)
+# 
+# num_trees = seq(0,10000,10)
+# num_trees[1] <- 10
+# #m_try = sqrt(5)
+# 
+# RF_list <- list()
+# tuning_df <- list()
+# x_shp_to <- as.data.frame(x_shp)
+# x_shp_to <- x_shp_to[complete.cases(x_shp_to[,c("n_fatalities",
+#                                                 # "tc_loss_med_11_20" ,
+#                                                 #   "cattle_mean" ,
+#                                                 #   "carbon_gross_11_20" , 
+#                                                 #   "lud_45" ,
+#                                                 #   "LUC_emissions" ,
+#                                                 #   "goat_mean" ,
+#                                                 #   "sheep_mean"
+#                                                 names(vif_values))]),]
+#   
+#   
+# for(i in 1:length(num_trees)){
+#   # i <- 1
+#   x <- as.data.frame(matrix(ncol=5,nrow=1))
+#   colnames(x) <- c("mtry","ntree","OOB","RMSE","i")
+#   #lmHeight = lm(n_events~tc_loss_med_11_20+cattle_mean+carbon_gross_11_20, data = x_shp) #Create the linear regression
+#   
+#   first_rf <- ranger(n_fatalities ~
+#                        #gain_20002020_ha    +
+#                        tc_loss_med_11_20 +
+#                        #carbon_gross_11_20 +
+#                        #tc_loss_med_prop +  
+#                        #protarea_area +
+#                        #protarea_prop + 
+#                        cattle_mean +
+#                        goat_mean + 
+#                        sheep_mean + 
+#                        lud_45 + 
+#                        #Tree cover + 
+#                        Shrubland +
+#                        Grassland + 
+#                        Cropland + 
+#                        #Built-up               +
+#                        #Bare/sparse vegetation +
+#                        #Snow and Ice           +
+#                        #Permanent water bodies +
+#                        #Herbaceous wetland     +
+#                        #Mangroves              +
+#                        #Moss and lichen        +
+#                        LUC_emissions, 
+#                      num.trees = num_trees[i], #mtry = m_try, #
+#                      importance = "impurity",
+#                      data = x_shp_to,oob.error = T,num.threads = 4,replace = F,seed = 1000)
+#   
+#   RF_list[[i]] <- first_rf
+#   x$mtry <-  first_rf$mtry
+#   x$ntree <- num_trees[i]
+#   x$OOB <- first_rf$r.squared 
+#   x$RMSE <- first_rf$prediction.error
+#   x$i <- i
+#   tuning_df[[i]] <- x
+#   rm(x)
+#   rm(first_rf)
+# };rm(i)
+# 
+# tuning_df <- do.call(rbind,tuning_df)
+# tuning_df <- tuning_df[order(tuning_df$OOB,decreasing = T),]
+# x <- predict(RF_list[tuning_df$i[1]][1], x_shp_to)
+# 
+# Metrics::rmse(x_shp_to$n_fatalities,x[[1]]$predictions)
+# plot(x_shp_to$n_fatalities,x[[1]]$predictions)
+# ################################################################################
+# #library(ggpmisc);library(ggplot2)
+# #x_o <- data.frame(Observed=x_shp_to$n_fatalities,predicted=x[[1]]$predictions)
+# # using default formula, label and methods
+# # ggplot(data = x_o, aes(x = Observed, y = predicted)) +
+# #   stat_poly_line() +
+# #   stat_poly_eq() +
+# #   geom_point()
+# 
+# 
+# res <- caret::postResample(x[[1]]$predictions, x_shp_to$n_fatalities)
+# res
+# #rm(x)
+# 
+# 
+# 
+# imps <- data.frame(var = names(vif_values),
+#                    imps = RF_list[tuning_df$i[1]][[1]]$variable.importance/max(RF_list[tuning_df$i[1]][[1]]$variable.importance))
+# imps %>% 
+#   ggplot(aes(imps, x = reorder(var, imps))) +
+#   geom_point(size = 10, colour = "#ff6767") +
+#   coord_flip() +
+#   labs(x = "Predictors", y = "Importance scores") +
+#   theme_bw(18)
+# 
+# 
   
-  
-for(i in 1:length(num_trees)){
-  # i <- 1
-  x <- as.data.frame(matrix(ncol=5,nrow=1))
-  colnames(x) <- c("mtry","ntree","OOB","RMSE","i")
-  #lmHeight = lm(n_events~tc_loss_med_11_20+cattle_mean+carbon_gross_11_20, data = x_shp) #Create the linear regression
-  
-  first_rf <- ranger(n_fatalities ~ 
-                       tc_loss_med_11_20 +
-                       cattle_mean +
-                       #carbon_gross_11_20 + 
-                       lud_45,#+
-                       #LUC_emissions, #+
-                       #goat_mean +
-                       #sheep_mean,
-                       #Bare/sparse vegetation, 
-                     num.trees = num_trees[i], #mtry = m_try, #
-                     importance = "impurity",
-                     data = x_shp_to,oob.error = T,num.threads = 4,replace = F,seed = 1000)
-  
-  RF_list[[i]] <- first_rf
-  x$mtry <-  first_rf$mtry
-  x$ntree <- num_trees[i]
-  x$OOB <- first_rf$r.squared 
-  x$RMSE <- first_rf$prediction.error
-  x$i <- i
-  tuning_df[[i]] <- x
-  rm(x)
-  rm(first_rf)
-};rm(i)
-
-tuning_df <- do.call(rbind,tuning_df)
-tuning_df <- tuning_df[order(tuning_df$OOB,decreasing = T),]
-x <- predict(RF_list[tuning_df$i[1]][1], x_shp_to)
-
-Metrics::rmse(x_shp_to$n_fatalities,x[[1]]$predictions)
-plot(x_shp_to$n_fatalities,x[[1]]$predictions)
-################################################################################
-#library(ggpmisc);library(ggplot2)
-#x_o <- data.frame(Observed=x_shp_to$n_fatalities,predicted=x[[1]]$predictions)
-# using default formula, label and methods
-# ggplot(data = x_o, aes(x = Observed, y = predicted)) +
-#   stat_poly_line() +
-#   stat_poly_eq() +
-#   geom_point()
-
-
-res <- caret::postResample(x[[1]]$predictions, x_shp_to$n_fatalities)
-res
-rm(x)
-
-
-
-imps <- data.frame(var = c("tc_loss_med_11_20","cattle_mean","lud_45"),
-                   imps = RF_list[tuning_df$i[1]][[1]]$variable.importance/max(RF_list[tuning_df$i[1]][[1]]$variable.importance))
-imps %>% 
-  ggplot(aes(imps, x = reorder(var, imps))) +
-  geom_point(size = 10, colour = "#ff6767") +
-  coord_flip() +
-  labs(x = "Predictors", y = "Importance scores") +
-  theme_bw(18)
-

@@ -45,7 +45,7 @@ pb <-
 for(i in 1:nrow(x_shp)){
   #calculating raster value  by county
   x_Ext <- terra::extract(r,
-                          x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],
+                          x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
                           na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
   #x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=F)
   x_shp$LUC_emissions[[i]] <- as.numeric(x_Ext)
@@ -56,7 +56,7 @@ close(pb)
 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)
-sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240523.shp")
+sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240604.shp")
 write.csv(data.frame(VARNAME=colnames(x_shp),
                      abbrev=colnames(x_shp2)),
           "D:/CIAT_DEFORESTATION/RESULTS/x_shp_abbr_metadata.csv")

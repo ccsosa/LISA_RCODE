@@ -55,7 +55,7 @@ labels <- data.frame(ID = c(10,20,30,40,50,60,70,80,90,95,100),
 ################################################################################
 #listing raster files
 
-if(!file.exists(paste0(data_dir_COVER,"/KENYA_LU_VALUES.csv"))){
+if(!file.exists(paste0(data_dir_COVER,"/KENYA_LU_VALUES_ILRIC.csv"))){
   print("Obtaining LU values area")
 files_to <- list.files(data_dir_COVER,recursive = T,pattern = ".tif")
 #
@@ -93,11 +93,11 @@ pb <-
 for(i in 1:nrow(x_shp)){
   #i <- 1
   #crop  LU layer to each county
-  x1 <- terra::crop(m,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],mask=T)
-  x1 <- terra::mask(x1,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),])
+  x1 <- terra::crop(m,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],mask=T)
+  x1 <- terra::mask(x1,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
   #calculating area by raster value
   x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=T)
-  x_Ext$ID_NORM <- x_shp$ID_NORM[[i]]
+  x_Ext$GID_3 <- x_shp$GID_3[[i]]
   utils::setTxtProgressBar(pb, i)
   raster_LU_List[[i]] <- x_Ext
 };rm(i)
@@ -107,10 +107,10 @@ close(pb)
 
 raster_LU_List2 <- do.call(rbind,raster_LU_List)
 
-write.csv(raster_LU_List2,paste0(data_dir_COVER,"/KENYA_LU_VALUES.csv"),row.names = F)
+write.csv(raster_LU_List2,paste0(data_dir_COVER,"/KENYA_LU_VALUES_ILRIC.csv"),row.names = F)
 } else {
   print("loading LU area data  previously obtained")
-  raster_LU_List2 <- read.csv(paste0(data_dir_COVER,"/KENYA_LU_VALUES.csv"),header = T)
+  raster_LU_List2 <- read.csv(paste0(data_dir_COVER,"/KENYA_LU_VALUES_ILRIC.csv"),header = T)
 }
 ################################################################################
 #Adding data 
@@ -124,7 +124,7 @@ for(i in 1:nrow(labels)){
   x_shp[,labels$NAME[[i]]] <- NA
   for(j in 1:nrow(x_shp)){
     #j <- 1
-    x_i <- raster_LU_List2[(which(raster_LU_List2$ID_NORM==x_shp$ID_NORM[[j]] &
+    x_i <- raster_LU_List2[(which(raster_LU_List2$GID_3==x_shp$GID_3[[j]] &
                                     raster_LU_List2$value==labels$ID[[i]])),]$area
     if(length(x_i)>0){
       x_shp[j,labels$NAME[[i]]][[1]] <- x_i
@@ -144,7 +144,7 @@ close(pb)
 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)
-sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240523.shp")
+sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240604.shp")
 write.csv(data.frame(VARNAME=colnames(x_shp),
                      abbrev=colnames(x_shp2)),
           "D:/CIAT_DEFORESTATION/RESULTS/x_shp_abbr_metadata.csv")

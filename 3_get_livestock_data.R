@@ -24,17 +24,17 @@ pb <-
 for(i in 1:nrow(x_shp)){
   ####extracting cattle per county
   x_Ext <- terra::extract(livestock,
-                          x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],
+                          x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
                           na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
   x_shp$cattle_mean[[i]] <- as.numeric(x_Ext)
   ####extracting goat per county
   x_Ext2 <- terra::extract(livestock_goat,
-                          x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],
+                          x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
                           na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
   
   ####extracting sheep per county
   x_Ext3 <- terra::extract(livestock_sheep,
-                           x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],
+                           x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
                            na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F) 
   
   
@@ -69,8 +69,8 @@ x_shp$lud_45 <- NA
 for(i in 1:nrow(x_shp)){
   #i <- 1
   #crop  lud layer to each county
-  x1 <- terra::crop(lud2,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),],mask=T)
-  x1 <- terra::mask(x1,x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),])
+  x1 <- terra::crop(lud2,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],mask=T)
+  x1 <- terra::mask(x1,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
   #calculating area
   x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=F)
   x_shp$lud_45[[i]] <- as.numeric(x_Ext$area)

@@ -6,8 +6,11 @@ require(ggplot2);require(MetBrewer);require(corrplot);
 require(factoextra);require(FactoMineR);require(xlsx)
 #data_dir <- "D:/CIAT_DEFORESTATION/RESULTS"
 
-x_shp1 <- geodata::gadm(country = "KEN",level = 1,
-                        path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
+x_shp1 <- sf::st_read("D:/CIAT_DEFORESTATION/DATA/NEW/KEN_ILRI/gadm41_KEN_1.shp")
+
+
+#x_shp1 <- geodata::gadm(country = "KEN",level = 1,
+#                        path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
 x_shp1 <- sf::st_as_sf(x_shp1)
 #load("D:/CIAT_DEFORESTATION/RESULTS/4_FOREST_PROCAREA_LI_LUD_CONFLICT.RData")
 #load("D:/CIAT_DEFORESTATION/RESULTS/5_FOREST_LU.RData")
@@ -18,10 +21,12 @@ data_dir <- "D:/CIAT_DEFORESTATION/RESULTS"
 #check colors
 #MetBrewer::display_all()
 
-vars <- c("gain_2000-2020_ha",
+vars <- c(#"gain_2000-2020_ha",
           "tc_loss_med_11_20",
-          "carbon_gross_11_20",
           "tc_loss_med_prop",
+          "ABG_2010_2020",
+          #"carbon_gross_11_20",
+          #"tc_loss_med_prop",
           "protarea_area",            
           "protarea_prop",
           "cattle_mean",
@@ -47,10 +52,12 @@ vars <- c("gain_2000-2020_ha",
           "LUC_emissions"
           )
 
-captions <- c("Forest gain (ha) (2000-2020)",
-              "Tree cover loss (ha) (Median: 2011-2020)",
-              "Forest carbon gross emissions (Mg CO2e) (Median: 2011-2020)",
-              "Tree cover loss proportion per county area (2011-2020)",
+captions <- c(#"Forest gain (ha) (2000-2020)",
+              "Tree cover loss (km2) (Median: 2011-2020)",
+              "Tree cover loss proportion of county (2011-2020)",
+              "Average forest above-ground biomass difference (Mg/ha)(2010-2020)",
+              #"Forest carbon gross emissions (Mg CO2e) (Median: 2011-2020)",
+              #"Tree cover loss proportion per county area (2011-2020)",
               "Protected area (km2)",            
               "Protected area proportion per county area",
               "Cattle (animal numbers for 2015)",
@@ -76,15 +83,20 @@ captions <- c("Forest gain (ha) (2000-2020)",
               "Average Land use change emissions (T C yr-1) (2011-2020)"
               )
 
-
+#i <- 1
 for(i in 1:length(vars)){
   print(i)
-  breaks <- as.data.frame(x_shp[,vars[[i]]])[,1]
+  x_i <- x_shp[vars[[i]]]
+  breaks <- as.data.frame(x_i[,vars[[i]]])[,1]
+  breaks[which(breaks==0)] <- NA
+  x_i[vars] <- breaks
+  
+  #x_i[vars[[1]]][which()] #NULL
   #breaks1 <- quantile(breaks)
   #total <- scale_fill_gradientn
   #x_shp[,vars[[i]]] <- as.numeric(x_shp[,vars[[i]]])
   ghmc <- ggplot() + 
-    geom_sf(data = x_shp, aes(fill = breaks), col = 'grey59', lwd = 0.3) + 
+    geom_sf(data = x_i, aes(fill = breaks), col = 'grey59', lwd = 0.3) + 
     #scale_fill_gradientn(colors = rev(met.brewer('VanGogh3', 5))) +
     #scale_fill_gradientn(colors = rev(met.brewer('VanGogh3', 5))) +
     scale_fill_gradientn(colors = met.brewer('VanGogh3', 5)) +
@@ -120,7 +132,7 @@ for(i in 1:length(vars)){
 #                        style = north_arrow_fancy_orienteering(text_family = 'serif'))
 var_df <- as.data.frame(x_shp[,vars])
 var_df$geometry <- NULL
-row.names(var_df)  <- x_shp$ID_NORM
+row.names(var_df)  <- x_shp$GID_3
 # x_PCA <- PCA(var_df,scale.unit = T)
 # eig.val <- get_eigenvalue(x_PCA)
 # fviz_eig(x_PCA, addlabels = TRUE, ylim = c(0, 50))
@@ -160,15 +172,17 @@ png(file = "D:/CIAT_DEFORESTATION/RESULTS/CORRELATIONS.png",width = 1600,height 
  dev.off()
  ###############################################################################
  #saving excel file
- sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240527.csv", layer_options = "GEOMETRY=AS_XY")
+ sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240603.csv", layer_options = "GEOMETRY=AS_XY",append = F)
  
  ###############################################################################
  x_Cor <- cor(var_mat2,method = "spearman")
- plot(hclust(as.dist(1-(x_Cor[-c(25),-c(25)])),method = "ward.D2"))
+ #plot(hclust(as.dist(1-(x_Cor[-c(25),-c(25)])),method = "ward.D2"))
+ plot(hclust(as.dist(1-(x_Cor[-c(24),-c(24)])),method = "ward.D2"))
  # 
  
  
- var_mat3 <- var_mat2[,c(7,8,9,11,12,13,14)]
+# var_mat3 <- var_mat2[,c(7,8,9,11,12,13,14)]
+ var_mat3 <- var_mat2[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,25)]
  x_Cor2 <- cor(var_mat3,method = "spearman")
  plot(hclust(as.dist(1-(x_Cor2)),method = "ward.D2"))
  # 
