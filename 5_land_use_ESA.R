@@ -144,7 +144,7 @@ close(pb)
 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)
-sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240604.shp")
+sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240605.shp")
 write.csv(data.frame(VARNAME=colnames(x_shp),
                      abbrev=colnames(x_shp2)),
           "D:/CIAT_DEFORESTATION/RESULTS/x_shp_abbr_metadata.csv")

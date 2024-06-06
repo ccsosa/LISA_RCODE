@@ -106,12 +106,44 @@ for(i in 1:nrow(x_shp)){
 };rm(i)
 close(pb)
 
+################################################################################
+#loading population data
+median_pop <- terra::rast(paste0(data_dir_COVER,"/GHSL/","median_pop_2010_2020.tif"))
+x_shp$median_pop_2010_2020 <- NA
+#i <- 1
 
+pb <-
+  utils::txtProgressBar(min = 0,
+                        max = nrow(x_shp),
+                        style = 3)
 
+for(i in 1:nrow(x_shp)){
+  #i <- 1
+  #crop  lud layer to each county
+  x1 <- terra::crop(median_pop,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],mask=T)
+  x1 <- terra::mask(x1,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
+  
+  #sum data to get median of human population per county for 2010-2020
+  x_Ext <- terra::extract(x1,
+                          x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
+                          na.rm = TRUE, weights = F,fun=sum,method="simple",ID=F)
+  #calculating area
+  x_shp$median_pop_2010_2020[[i]] <- as.numeric(x_Ext[[1]])
+  utils::setTxtProgressBar(pb, i)
+};rm(i)
+
+close(pb)
+################################################################################
+#weighting conflict/population
+#fatalities rates per 1000 habitants
+  #https://www.inei.gob.pe/media/MenuRecursivo/metodologias/mortalidad01.pdf
+x_shp$n_fat_pop <- (x_shp$n_fatalities/x_shp$median_pop_2010_2020)*1000
+x_shp$n_fat_pop_total <- (x_shp$n_fatalities_total/x_shp$median_pop_2010_2020)*1000
+################################################################################
 #saving shapefile 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)
-sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240604.shp")
+sf::write_sf(x_shp2,"D:/CIAT_DEFORESTATION/RESULTS/KEN_20240605.shp")
 write.csv(data.frame(VARNAME=colnames(x_shp),
                      abbrev=colnames(x_shp2)),
           "D:/CIAT_DEFORESTATION/RESULTS/x_shp_abbr_metadata.csv")

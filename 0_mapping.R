@@ -49,7 +49,10 @@ vars <- c(#"gain_2000-2020_ha",
           "Herbaceous wetland",
           "Mangroves",
           "Moss and lichen",
-          "LUC_emissions"
+          "LUC_emissions",
+          "median_pop_2010_2020",
+          "n_fat_pop",
+          "n_fat_pop_total"
           )
 
 captions <- c(#"Forest gain (ha) (2000-2020)",
@@ -80,7 +83,10 @@ captions <- c(#"Forest gain (ha) (2000-2020)",
               "Herbaceous wetland (km2) (2021)",
               "Mangroves (km2) (2021)",
               "Moss and lichen (km2) (2021)",
-              "Average Land use change emissions (T C yr-1) (2011-2020)"
+              "Average Land use change emissions (T C yr-1) (2011-2020)",
+              "Human population (Median:2010-2020)",
+              "Death rate involving farmers, fishers or pastoralists (2011-2020)",
+              "Death rate (2011-2020)"
               )
 
 #i <- 1
@@ -172,7 +178,7 @@ png(file = "D:/CIAT_DEFORESTATION/RESULTS/CORRELATIONS.png",width = 1600,height 
  dev.off()
  ###############################################################################
  #saving excel file
- sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240603.csv", layer_options = "GEOMETRY=AS_XY",append = F)
+ sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240605.csv", layer_options = "GEOMETRY=AS_XY",append = F)
  
  ###############################################################################
  x_Cor <- cor(var_mat2,method = "spearman")
@@ -182,7 +188,7 @@ png(file = "D:/CIAT_DEFORESTATION/RESULTS/CORRELATIONS.png",width = 1600,height 
  
  
 # var_mat3 <- var_mat2[,c(7,8,9,11,12,13,14)]
- var_mat3 <- var_mat2[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,25)]
+ var_mat3 <- var_mat2[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,25,26,27,28)]
  x_Cor2 <- cor(var_mat3,method = "spearman")
  plot(hclust(as.dist(1-(x_Cor2)),method = "ward.D2"))
  # 

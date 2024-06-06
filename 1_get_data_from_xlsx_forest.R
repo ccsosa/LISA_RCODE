@@ -2,9 +2,23 @@ rm(list = ls());gc()
 #load libraries
 require(readxl);require(dplyr);require(geodata);require(sf);require(matrixStats)
 #require(rgeoda);require(sf);require(terra)
+
+
 #getting folder
 data_dir  <- "D:/CIAT_DEFORESTATION/DATA/OneDrive_1_17-5-2024"
 data_dir_COVER <- "D:/CIAT_DEFORESTATION/DATA/NEW"
+################################################################################
+#creating folder to save results
+if(!dir.exists("D:/CIAT_DEFORESTATION/RESULTS")){
+  dir.create("D:/CIAT_DEFORESTATION/RESULTS")
+}
+
+if(!dir.exists("D:/CIAT_DEFORESTATION/RESULTS/LISA")){
+  dir.create("D:/CIAT_DEFORESTATION/RESULTS/LISA")
+}
+if(!dir.exists("D:/CIAT_DEFORESTATION/RESULTS/MAPS")){
+  dir.create("D:/CIAT_DEFORESTATION/RESULTS/MAPS")
+}
 #geting shapefile
 #loading shapefile from GADM3
 # x_shp <- geodata::gadm(country = "KEN",level = 3,
