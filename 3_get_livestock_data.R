@@ -25,17 +25,17 @@ for(i in 1:nrow(x_shp)){
   ####extracting cattle per county
   x_Ext <- terra::extract(livestock,
                           x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
-                          na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
+                          na.rm = TRUE, weights = T,fun=sum,method="simple",ID=F)
   x_shp$cattle_mean[[i]] <- as.numeric(x_Ext)
   ####extracting goat per county
   x_Ext2 <- terra::extract(livestock_goat,
                           x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
-                          na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
+                          na.rm = TRUE, weights = T,fun=sum,method="simple",ID=F)
   
   ####extracting sheep per county
   x_Ext3 <- terra::extract(livestock_sheep,
                            x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
-                           na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F) 
+                           na.rm = TRUE, weights = T,fun=sum,method="simple",ID=F) 
   
   
   

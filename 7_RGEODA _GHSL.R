@@ -1,5 +1,5 @@
 rm(list = ls());gc()
-#load libraries1
+#load libraries
 require(readxl);require(dplyr);require(geodata);
 require(sf);require(matrixStats);require(parallel);
 require(ggpmisc)
@@ -42,101 +42,83 @@ if(!dir.exists(paste0(out_dir,"/SHP"))){
 #load
 load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
 ################################################################################
-x_shp$LUC_emissions <- x_shp$LUC_emissions/1000
-
-x_shp$livestock <- rowSums(cbind(x_shp$cattle_mean,x_shp$sheep_mean,x_shp$goat_mean),na.rm = T)
-################################################################################
 vars <- c(#"gain_2000-2020_ha",
-  "loss_m1120",
-  "loss_m1123",
-  "loss_m_p1120",
-  "ABG_10_20",
-  "ABG_2020",
+  "tc_loss_med_11_20",
+  "tc_loss_med_prop",
+  "ABG_2010_2020",
   #"carbon_gross_11_20",
   #"tc_loss_med_prop",
-  "prot_area",            
-  "prot_prop",
+  "protarea_area",            
+  "protarea_prop",
   "cattle_mean",
   "goat_mean",
   "sheep_mean",
   "lud_45",
-  "n_fat",
-  "n_evts",
-  #"n_fat_t",
-  #"n_evts_t",
-  "n_evts1124",
-  "n_fat1124",
+  "n_fatalities",
+  "n_events",
+  "n_fatalities_total",
+  "n_events_total",
   #new
   "Tree cover",
   "Shrubland",
   "Grassland",
   "Cropland",
   "Built-up",
-  #"Bare/sparse vegetation",
+  "Bare/sparse vegetation",
   "Snow and Ice",
   "Permanent water bodies",
   "Herbaceous wetland",
-  #  "Mangroves",
-  #  "Moss and lichen",
+  "Mangroves",
+  "Moss and lichen",
   "LUC_emissions",
-  #"median_pop_2010_2020",
-  #"n_fat_pop",
-  #"n_fat_pop_total",
-  "pop2020_w",
-  "n_fat_p",
-  #"n_fat_pop_total_world",
-  "n_fat_p1123",
-  "livestock"
+  "median_pop_2010_2020",
+  "n_fat_pop",
+  "n_fat_pop_total",
+  "pop2020_worldpop",
+  "n_fat_pop_world",
+  "n_fat_pop_total_world"
 )
 
 captions <- c(#"Forest gain (ha) (2000-2020)",
   "Tree cover loss (km2) (Median: 2011-2020)",
-  "Tree cover loss (km2) (Median: 2011-2023)",
-  "Tree cover loss proportion (Median: 2011-2020)",
-  "Average forest above-ground biomass (Mg/ha)(2010-2020)",
-  "Average forest above-ground biomass(Mg/ha)(2020)",
+  "Tree cover loss proportion of county (2011-2020)",
+  "Average forest above-ground biomass difference (Mg/ha)(2010-2020)",
   #"Forest carbon gross emissions (Mg CO2e) (Median: 2011-2020)",
   #"Tree cover loss proportion per county area (2011-2020)",
   "Protected area (km2)",            
   "Protected area proportion per county area",
-  "Cattle (animal number for 2015)",
-  "Goats (animal number for 2015)",
-  "Sheep (animal number for 2015)",
+  "Cattle (animal numbers for 2015)",
+  "Goats (animal numbers for 2015)",
+  "Sheep (animal numbers for 2015)",
   "High and very high land use degradation (km2) (2020)",
-  "Fatalities (farmers, fishers or pastoralists) (2011-2020)",
-  "Conflict events (farmers, fishers or pastoralists) (2011-2020)",
-  #"Fatalities (2011-2020)",
-  #"Conflict events (2011-2020)",
-  "Conflict events (farmers, fishers or pastoralists) (2011-2023)",
-  "Fatalities (farmers, fishers or pastoralists) (2011-2023)",
+  "Fatalities involving farmers, fishers or pastoralists (2011-2020)",
+  "Conflict events involving farmers, fishers or pastoralists (2011-2020)",
+  "Fatalities (2011-2020)",
+  "Conflict events (2011-2020)",
   #new
   "Tree cover (km2) (2021)",
   "Shrubland (km2) (2021)",
   "Grassland (km2) (2021)",
   "Cropland (km2) (2021)",
   "Built-up (km2) (2021)",
-  #"Bare or sparse vegetation (km2) (2021)",
+  "Bare or sparse vegetation (km2) (2021)",
   "Snow and Ice (km2) (2021)",
   "Permanent water bodies (km2) (2021)",
   "Herbaceous wetland (km2) (2021)",
-  #  "Mangroves (km2) (2021)",
-  #  "Moss and lichen (km2) (2021)",
-  "Average Land use change emissions (T C yr-1)/1000 (2011-2020)",
-  #"Human population (Median:2010-2020)",
-  #"Death rate involving farmers, fishers or pastoralists (2011-2020)",
-  #"Death rate (2011-2020)",
+  "Mangroves (km2) (2021)",
+  "Moss and lichen (km2) (2021)",
+  "Average Land use change emissions (T C yr-1) (2011-2020)",
+  "Human population (Median:2010-2020)",
+  "Death rate involving farmers, fishers or pastoralists (2011-2020)",
+  "Death rate (2011-2020)",
   "Human population UNDP estimate (2020)",
-  "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2020)",
-  #"Death rate (UNDP estimate) (2011-2020)",
-  "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2023)",
-  "Livestock (Cattle, goats ans sheep for 2015)"
+  "Death rate involving farmers, fishers or pastoralists (UNDP estimate) (2011-2020)",
+  "Death rate (UNDP estimate) (2011-2020)"
 )
-
-options(scipen = 999)
 
 x_shp_to_csv <- x_shp
 x_shp_to_csv$geometry <- NULL
-write.csv(x_shp_to_csv,paste0(out_dir,"/","TO_CSV_UNDP.csv"),row.names = F,na = "")
+write.csv(x_shp_to_csv,paste0(out_dir,"/","TO_CSV.csv"),row.names = F,na = "")
 # #y
 # var_y <- c('n_fatalities')
 # #x
@@ -166,23 +148,40 @@ colors_to_plot <- data.frame(Cluster=c("Not significant",
                              )
                                )
 
+#colors_to_plot$Cluster <- factor(colors_to_plot$Cluster,levels = colors_to_plot$Cluster)
+#colors_to_plot$color <- factor(colors_to_plot$color,levels = colors_to_plot$color)
 ################################################################################
 # x_shp1 <- geodata::gadm(country = "KEN",level = 1,
 #                         path = "D:/CIAT_DEFORESTATION/DATA/NEW/GADM")
 x_shp1 <- sf::st_read("D:/CIAT_DEFORESTATION/DATA/NEW/KEN_ILRI/gadm41_KEN_1.shp")
 x_shp1 <- sf::st_as_sf(x_shp1)
+#plot(st_geometry(x_shp1))
+#load("D:/CIAT_DEFORESTATION/RESULTS/4_FOREST_PROCAREA_LI_LUD_CONFLICT.RData")
+#load("D:/CIAT_DEFORESTATION/RESULTS/5_FOREST_LU.RData")
+
+
+#summary(queen_w)
+# nbrs <- rgeoda::get_neighbors(queen_w, idx = 1)
+# cat("\nNeighbors of the 1-st observation are:", nbrs)
+# lag <- spatial_lag(queen_w, x_shp[c('n_fatalities', 'tc_loss_med_prop')])
+# lag
+
+#save_weights(gda_w, id_variable, out_path, layer_name = "")
+#queen to LISA
+#crm_prp = x_shp["tc_loss_med_prop"]
+#using moran bivariatee 
+
 
 #subsetting (Only using subcounties with data)
-data_to_moran <- x_shp[c("GID_3",var_x,var_y)]
+data_to_moran <- x_shp[c(var_x,var_y)]
 data_to_moran$geometry <- NULL
 data_to_moran <- data_to_moran[complete.cases(data_to_moran),]
 
 #subsetting shapefile with data available
-x_moran <- x_shp[x_shp$GID_3 %in% data_to_moran$GID_3,]
+x_moran <- x_shp[as.numeric(row.names(data_to_moran)),]
 x_moran$ID_i <- 1:nrow(x_moran)
-
-#x_moran <- x_moran[c("GID_3","ID_i",var_x,var_y)]
 sf::write_sf(x_moran,paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".shp"))
+#base <- sf::st_read(paste0(data_dir,"/","ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp"))
 queen_w <- rgeoda::queen_weights(x_moran)
 save_weights(queen_w, x_moran["ID_i"],#x_moran,
              out_path = paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".gal"))
@@ -196,8 +195,27 @@ qsa <- rgeoda::local_bimoran(w = queen_w,
                           permutations = 9999,
                           significance_cutoff = 0.05,
                           cpu_threads = 4,
-                          seed = 1000)
+                          seed = 10000)
 
+# plot(as.numeric(scale(data_to_moran[,1],center = T,scale = T)),
+#      spatial_lag(queen_w, x_shp[c(var_y)])[,1],col=cats)
+# 
+
+# gda_lisa_path<- local_bijoincount(queen_w,
+#                           x_shp[c('n_fatalities', 'tc_loss_med_prop')],
+#                           #permutations = 9999,
+#                           #significance_cutoff = 0.05,
+#                           #cpu_threads = 4,
+#                           #seed = 1000
+#                           )
+#using model uni7
+#lisa <- local_moran(queen_w, crm_prp,permutations = 10000)
+#spatial lag
+# crm_lag1 <- rgeoda::local_moran(queen_w, x_shp[c('n_fatalities')])
+# crm_lag2 <- rgeoda::local_moran(queen_w, x_shp[c('tc_loss_med_prop')])
+
+# crm_lag1 <- rgeoda::spatial_lag(queen_w, x_shp[c('n_fatalities')])
+# crm_lag2 <- rgeoda::spatial_lag(queen_w, x_shp[c('tc_loss_med_prop')])
 
 #Spatial autocorrelation values
 lms <- rgeoda::lisa_values(gda_lisa = qsa)
@@ -221,6 +239,52 @@ if(sum(cats)>0){
 #cats
 #validating clusters   
 results <- rgeoda::spatial_validation(sf_obj = x_moran, clusters = cats, w = queen_w)
+#results
+#x to y plots
+# values_plot <- data.frame(
+#            #VAR1=lisa_values(crm_lag1),
+#            #VAR2=lisa_values(crm_lag2),
+#           VAR1= scale(as.numeric(as.matrix(x_shp[c('n_fatalities')])[,1]),
+#                       center = T,scale = T),
+#           #VAR1=crm_lag1[,1],
+#           VAR2=crm_lag2[,1],
+#            CLUSTER=cats,
+#            col2=NA,
+#            pvals=pvals)
+# for(i in 1:length(clrs)){
+#   #i <- 1
+#   values_plot$col2[which(values_plot$CLUSTER==i-1)] <- as.character(clrs[i])
+#   values_plot$CLUSTER[which(values_plot$CLUSTER==i-1)] <- names(clrs[i])
+#  
+# }
+# #values_plot$pvals >0.05
+# values_plot$col2 <- factor(values_plot$col2)
+# values_plot$CLUSTER <- factor(values_plot$CLUSTER)
+# 
+# p <- ggplot(data = values_plot, aes(x = VAR1, 
+#                              y = VAR2,
+#                              colour= CLUSTER))
+#                              
+#                              #group = CLUSTER))
+# p <-  p +
+#    geom_hline(yintercept = mean(values_plot$VAR2),linewidth = 2)+
+#    geom_vline(xintercept = mean(values_plot$VAR1),linewidth = 2)+
+#   geom_point(size = 4)+
+#  scale_colour_manual(values = as.character(clrs),labels=names(clrs))
+# #+
+#   # geom_point(colour = "grey90", size = 1.5)
+# p
+
+
+#Clusters
+
+# plot(st_geometry(x_shp), 
+#      col=sapply(cats, function(x){return(lisa_colors(gda_lisa)[[x+1]])}), 
+#      border = "#333333", lwd=0.2
+#      )
+# title(main = "Local Moran Map for n_fatalities and tc_loss_med_prop")
+# legend('bottomleft', legend = lbls, fill = clrs, border = "#eeeeee",cex = 0.5)
+
 
 #adding new values to plot maps
 x_shp_copy <- x_moran
@@ -255,9 +319,7 @@ data_to_plot <- data.frame(x=var_reg[,1],
 M <- lm(lag_y$Spatial.Lag ~ var_reg[,1])
 #cf <- coef(M)
 # Plot the data
-################################################################################
 
-################################################################################
 ################################################################################
 #Bivariate Moran plot
 
@@ -273,62 +335,6 @@ caption_to_y <- 1:length(captions)*caption_to_y
 caption_to_y <- caption_to_y[caption_to_y!=0]
 var_to_y <- vars[caption_to_y]
 caption_to_y <- captions[caption_to_y]
-################################################################################
-#save results
-x_data <- x_shp_copy[,c("NAME_1","NAME_2","NAME_3","GID_3",var_x,var_y,"CLUSTERS","pvals")]
-x_data <- cbind(x_data,lms)
-if(file.exists(paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/RAWS/",var_to_x,"_",var_to_y,".csv"))){
-  print("already saved")
-} else {
-  sf::st_write(x_data, paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/RAWS/",var_to_x,"_",var_to_y,".csv"),
-               layer_options = "GEOMETRY=AS_XY")  
-}
-################################################################################
-#cluster_number summary
-print("summarizing results")
-
-cluster_unique <- unique(x_data$CLUSTERS)
-cluster_unique <- cluster_unique[which(cluster_unique!="Not significant")]
-
-summary_df_List <- list()
-
-for(i in 1:length(cluster_unique)){
-  #i <- 1
-  #subsetting
-  summary_df <- data.frame(matrix(nrow = 2,ncol = 8))
-  colnames(summary_df) <- c("variable","cluster","min","max","mean","sd","median","n")
-  
-  #X variable
-  x1 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),][var_to_x]
-  x1$geometry <- NULL
-  #Y variable
-  x2 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),][var_to_y]
-  x2$geometry <- NULL
-  #
-  x3 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),]["lms"]
-  x3$geometry <- NULL
-  
-  #
-  summary_df$variable <- c(var_to_x,var_to_y)
-  summary_df$cluster <- as.character(cluster_unique[[i]])
-  summary_df$min <- c(min(x1[,1],na.rm = T),min(x2[,1],na.rm = T))
-  summary_df$max <- c(max(x1[,1],na.rm = T),max(x2[,1],na.rm = T))
-  summary_df$mean <- c(mean(x1[,1],na.rm = T),mean(x2[,1],na.rm = T))
-  summary_df$sd <- c(sd(x1[,1],na.rm = T),sd(x2[,1],na.rm = T))
-  summary_df$median <- c(median(x1[,1],na.rm = T),median(x2[,1],na.rm = T))
-  summary_df$n <- c(nrow(x1),nrow(x2))
-  summary_df$moran_cluster <- mean(x3$lms,na.rm=T)
-  summary_df$moran_mean <- mean(lms,na.rm=T)
-  summary_df$bonferroni <- lisa_bo(qsa,current_p = 0.05)
-  #CLUSTERS_SUMMARIES
-  summary_df_List[[i]] <- summary_df
-  
-};rm(i)
-summary_df_List <- do.call(rbind,summary_df_List)
-write.csv(summary_df_List,paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/CLUSTERS_SUMMARIES/",
-                                 var_to_x,"_",var_to_y,".csv"),row.names = F)
-
-
 ################################################################################
 x_lag_plot <- ggplot(data_to_plot,aes(x,y,color = cluster)) +
   geom_point(aes(colour =cluster)) +
@@ -399,8 +405,7 @@ ghmc <- ggplot(x_shp_copy) +
   # geom_sf_text(data = expn, aes(label = gid), family = 'serif', size = 2.5, col = 'grey40') +
   # geom_sf_text(data = mpos, aes(label = MPIO_CNMBR), family = 'serif', size = 2.5, col = 'grey40') +
   labs(x = 'Longitude', y = 'Latitude',fill="") + 
-  #ggtitle(label = paste("LISA for: ",caption_to_x,"and",caption_to_y)) + 
-  ggtitle(label=paste("",caption_to_x,"and",caption_to_y, " I: ",round(mean(lms,na.rm=T),3)))+
+  ggtitle(label = paste("LISA for: ",caption_to_x,"and",caption_to_y)) + 
   #coord_sf(xlim = ext(shp)[1:2], ylim = ext(shpf)[3:4]) +
   theme_minimal() + 
   theme(legend.position = 'right', 
@@ -421,41 +426,21 @@ ggsave(plot = ghmc, filename = paste0(out_dir,"/PLOTS/","LI_",var_to_x,"_",var_t
 
 
 #}
-################################################################################
-
-#Clusters
-lbls2 <- lbls
-for(i in 1:length(lbls)){
-  x_s <- summary_df_List$n[which(summary_df_List$cluster==lbls[[i]])]
-  if(length(x_s)>0){
-    lbls2[[i]] <- paste0(lbls2[[i]]," (",x_s[[1]],")")
-  } else {
-    lbls2[[i]] <- lbls2[[i]]
-  }
-}
-
-names(clrs) <- lbls2
 
 # #p values
 
-png(file =paste0(out_dir,"/PVAL/","LI_",var_to_x,"_",var_to_y,".png"),
-    width = 2500,#900,
-    height = 2500,#900,
-    units = "px",
-    bg="white",
-    res = 300)
+png(file =paste0(out_dir,"/PVAL/","LI_",var_to_x,"_",var_to_y,".png"),width = 900,height = 900,units = "px")
 par(mfrow = c(1, 2)) # Create a 2 x 2 plotting matrix
 
 
+#Clusters
+
 plot(st_geometry(x_shp_copy),
      col=sapply(cats, function(x){return(lisa_colors(gda_lisa=qsa)[[x+1]])}),
-     border = "white", lwd=0.2
+     border = "#333333", lwd=0.2
      )
-plot(st_geometry(x_shp1),
-     col=NA,
-     border = "gray60", lwd=0.2,add=T
-)
-legend('bottomleft', legend = lbls2, fill = clrs, border = "#eeeeee",cex = 0.8)
+
+legend('bottomleft', legend = lbls, fill = clrs, border = "#eeeeee")
 
 p_labels <- c("Not significant", "p <= 0.05", "p <= 0.01", "p <= 0.001")
 p_colors <- c("#eeeeee", "#84f576", "#53c53c", "#348124")
@@ -469,167 +454,290 @@ plot(st_geometry(x_shp_copy),
        else return(p_colors[1])
      }),
      border = "#333333", lwd=0.2)
-
-plot(st_geometry(x_shp1),
-     col=NA,
-     border = "gray60", lwd=0.2,add=T
-)
  #title(main = paste("p values clusters for: ",caption_to_x,"and",caption_to_y))
- legend('bottomleft', legend = p_labels, fill = p_colors, border = "#eeeeee",cex = 0.8)
+ legend('bottomleft', legend = p_labels, fill = p_colors, border = "#eeeeee")
  
  
- title(main = paste("",caption_to_x,"and",caption_to_y, " I: ",round(mean(lms,na.rm=T),3)),
-       line = -4, outer = TRUE,cex.main=0.7)
+ title(main = paste("LISA for: ",caption_to_x,"and",caption_to_y),
+       line = -4, outer = TRUE,cex.main=1)
 dev.off()
 
 ################################################################################
+#save results
+x_data <- x_shp_copy[,c("NAME_1","NAME_2","NAME_3","GID_3",var_x,var_y,"CLUSTERS","pvals")]
+x_data <- cbind(x_data,lms)
+if(file.exists(paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/RAWS/",var_to_x,"_",var_to_y,".csv"))){
+  print("already saved")
+} else {
+  sf::st_write(x_data, paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/RAWS/",var_to_x,"_",var_to_y,".csv"),
+               layer_options = "GEOMETRY=AS_XY")  
+}
+################################################################################
+#cluster_number summary
 
+
+cluster_unique <- unique(x_data$CLUSTERS)
+cluster_unique <- cluster_unique[which(cluster_unique!="Not significant")]
+
+summary_df_List <- list()
+
+for(i in 1:length(cluster_unique)){
+  #i <- 1
+  #subsetting
+  summary_df <- data.frame(matrix(nrow = 2,ncol = 8))
+  colnames(summary_df) <- c("variable","cluster","min","max","mean","sd","median","n")
+  
+  #X variable
+  x1 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),][var_to_x]
+  x1$geometry <- NULL
+  #Y variable
+  x2 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),][var_to_y]
+  x2$geometry <- NULL
+  #
+  x3 <- x_data[which(x_data$CLUSTERS==as.character(cluster_unique[[i]])),]["lms"]
+  x3$geometry <- NULL
+  
+  #
+  summary_df$variable <- c(var_to_x,var_to_y)
+  summary_df$cluster <- as.character(cluster_unique[[i]])
+  summary_df$min <- c(min(x1[,1],na.rm = T),min(x2[,1],na.rm = T))
+  summary_df$max <- c(max(x1[,1],na.rm = T),max(x2[,1],na.rm = T))
+  summary_df$mean <- c(mean(x1[,1],na.rm = T),mean(x2[,1],na.rm = T))
+  summary_df$sd <- c(sd(x1[,1],na.rm = T),sd(x2[,1],na.rm = T))
+  summary_df$median <- c(median(x1[,1],na.rm = T),median(x2[,1],na.rm = T))
+  summary_df$n <- c(nrow(x1),nrow(x2))
+  summary_df$moran_cluster <- mean(x3$lms,na.rm=T)
+  summary_df$moran_mean <- mean(lms,na.rm=T)
+  summary_df$bonferroni <- lisa_bo(qsa,current_p = 0.05)
+  #CLUSTERS_SUMMARIES
+  summary_df_List[[i]] <- summary_df
+  
+};rm(i)
+summary_df_List <- do.call(rbind,summary_df_List)
+write.csv(summary_df_List,paste0("D:/CIAT_DEFORESTATION/RESULTS/LISA/CLUSTERS_SUMMARIES/",
+                            var_to_x,"_",var_to_y,".csv"),row.names = F)
 } else {
   print("NO ASSOCIATIONS FOUND!")
 }
 
-print("ANALYZED!")
-return("DONE!")
+print("DONE!")
+return(ghmc)
 }
+
 ################################################################################
-################################################################################
-################################################################################
-#colnames(x_shp)
-var_y <- 'n_fat'
+
+var_y <- 'n_fatalities'
 #x
-var_x <- 'ABG_2020'
+var_x <- 'tc_loss_med_prop'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-#colnames(x_shp)
-var_y <- 'n_fat'
+
+################################################################################
+var_y <- 'n_events'
 #x
-var_x <- 'ABG_10_20'
+var_x <- 'tc_loss_med_prop'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'tc_loss_med_11_20'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'tc_loss_med_11_20'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+
+
+################################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'lud_45'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'lud_45'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'cattle_mean'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+
+################################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'cattle_mean'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'LUC_emissions'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+###############################################################################
+
+var_y <- 'n_fatalities'
+#x
+var_x <- 'LUC_emissions'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-#x_shp$n_fat
-var_y <- 'n_fat'
-var_x <- 'loss_m1120'
+###############################################################################
+
+var_y <- 'n_fatalities'
+#x
+var_x <- 'goat_mean'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_fat'
+var_y <- 'n_events'
+#x
+var_x <- 'goat_mean'
+
+#load
+#load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+
+
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'tc_loss_med_11_20'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'tc_loss_med_11_20'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities_total'
+#x
+var_x <- 'n_events_total'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'n_events'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'protarea_area'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fatalities'
+#x
+var_x <- 'ABG_2010_2020'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_events'
+#x
+var_x <- 'ABG_2010_2020'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+
+var_y <- 'n_fat_pop'
+#x
+var_x <- 'ABG_2010_2020'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+
+var_y <- 'n_fat_pop'
+#x
+var_x <- 'tc_loss_med_11_20'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ###############################################################################
+var_y <- 'n_fat_pop'
 #x
 var_x <- 'cattle_mean'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_fat'
+var_y <- 'n_fat_pop'
 #x
 var_x <- 'lud_45'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'pop2020_w'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-# ###############################################################################
-var_y <- 'n_fat'
+var_y <- 'n_fat_pop'
 #x
 var_x <- 'LUC_emissions'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
+# ###############################################################################
+var_y <- 'n_fat_pop'
 #x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'sheep_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'goat_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'Cropland'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'loss_m_p1120'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'livestock'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-################################################################################
-################################################################################
-#events
-#colnames(x_shp)
-var_y <- 'n_evts'
-#x
-var_x <- 'ABG_2020'
+var_x <- 'median_pop_2010_2020'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-#colnames(x_shp)
-var_y <- 'n_evts'
-#x
-var_x <- 'ABG_10_20'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-#x_shp$n_fat
-var_y <- 'n_evts'
-var_x <- 'loss_m1120'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'cattle_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'pop2020_w'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-# ###############################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'LUC_emissions'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'sheep_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'goat_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'Cropland'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'loss_m_p1120'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'livestock'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 
+# 
+# var_y <- 'tc_loss_med_11_20'
+# #x
+# var_x <- 'cattle_mean'
+# 
+# #load
+# #load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+# 
+# 
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 
+# 
+# var_y <- 'tc_loss_med_11_20'
+# #x
+# var_x <- 'n_events'
+# 
+# #load
+# #load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
+# 
+# 
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 

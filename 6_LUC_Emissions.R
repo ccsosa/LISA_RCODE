@@ -46,7 +46,7 @@ for(i in 1:nrow(x_shp)){
   #calculating raster value  by county
   x_Ext <- terra::extract(r,
                           x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],
-                          na.rm = TRUE, weights = F,fun=mean,method="simple",ID=F)
+                          na.rm = TRUE, weights = T,fun=mean,method="simple",ID=F)
   #x_Ext <- terra::expanse(x1,unit="km",transform=T,byValue=F)
   x_shp$LUC_emissions[[i]] <- as.numeric(x_Ext)
   utils::setTxtProgressBar(pb, i)

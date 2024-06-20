@@ -21,20 +21,20 @@ pb <-
 # plot(st_geometry(x_shp[which(x_shp$ID_NORM==x_shp$ID_NORM[[i]]),]))
 # plot(st_geometry(proc),add=T,col="blue")
 # plot(st_geometry(x1),add=T,col="red")
-x_shp$protarea_area <- NA
+x_shp$prot_area <- NA
 #Doing intersection of protected area per county (Fastest way)
 for(i in 1:nrow(x_shp)){
   #i <- 164
   x1 <- sf::st_intersection(x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),],proc)
   #print(paste("i= ",i," j= ",nrow(x1)))
   if(nrow(x1)>0){
-    x_shp$protarea_area[[i]] <- (as.numeric(sum(sf::st_area(x1))))*(1e-6/1) 
+    x_shp$prot_area[[i]] <- (as.numeric(sum(sf::st_area(x1))))*(1e-6/1) 
   } else {
-    x_shp$protarea_area[[i]] <- 0
+    x_shp$prot_area[[i]] <- 0
   }
   utils::setTxtProgressBar(pb, i)
 };rm(i)
 close(pb)
 #Calculating proportion of protected area per county
-x_shp$protarea_prop <- x_shp$protarea_area/x_shp$area
+x_shp$prot_prop <- x_shp$prot_area/x_shp$area
 save.image("D:/CIAT_DEFORESTATION/RESULTS/2_FOREST_PROCAREA.RData")
