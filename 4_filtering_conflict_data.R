@@ -75,7 +75,14 @@ x_shp$n_fat1124 <- NA
 x_shp$n_evts1124 <- NA
 #x_shp$n_fat_t1124 <- NA
 #x_shp$n_evts_t1124 <- NA
-
+x_shp$n_fat1416 <- NA
+x_shp$n_evts1416 <- NA
+x_shp$n_fat1921 <- NA
+x_shp$n_evts1921 <- NA
+################################################################################
+#defining years for movible averages
+years1 <- 2014:2016
+years2 <- 2019:2021
 ################################################################################
 #filling out events and fatalities
 pb <-
@@ -85,7 +92,7 @@ pb <-
 for(i in 1:nrow(x_shp)){
   
   #counting fatalities and events using sum of fatalities and number of columns 
-  #i <- 1
+#  i <- 1
   x1 <- sf::st_intersection(data2,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
   if(nrow(x1)>0){
     x_shp$n_fat[[i]] <- sum(x1$FATALITIES)
@@ -112,20 +119,76 @@ pb <-
                         max = nrow(x_shp),
                         style = 3)
 for(i in 1:nrow(x_shp)){
+  #i <- 1
+  x2 <- sf::st_intersection(data2_or,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
+  #x2_years1 <- x2
   
-x2 <- sf::st_intersection(data2_or,x_shp[which(x_shp$GID_3==x_shp$GID_3[[i]]),])
   if(nrow(x2)>0){
     #x_shp$n_fat[[i]] <- sum(x1$FATALITIES)
     #x_shp$n_evts[[i]] <- nrow(x1)
     x_shp$n_fat1124[[i]] <- sum(x2$FATALITIES)
     x_shp$n_evts1124[[i]] <- nrow(x2)
-  
+    # x_shp$n_fat1416[[i]] <- sum(x2_years1$FATALITIES)
+    # x_shp$n_evts1416[[i]] <- nrow(x2_years1)
+    # x_shp$n_fat1921[[i]] <- sum(x2_years2$FATALITIES)
+    # x_shp$n_evts1921[[i]] <- nrow(x2_years2)
+    
   } else {
     #x_shp$n_fat[[i]] <- 0
     #x_shp$n_evts[[i]] <- 0
     x_shp$n_fat1124[[i]] <- 0
     x_shp$n_evts1124[[i]] <-0
+    #x_shp$n_fat1416[[i]] <- 0
+    #x_shp$n_evts1416[[i]] <- 0
+    #x_shp$n_fat1921[[i]] <- 0
+    #x_shp$n_evts1921[[i]] <- 0
   }
+  ##############################################################################
+  x2_years1 <-x2[which(x2$YEAR %in% years1),]
+  #x2_years2 <- x2[which(x2$YEAR %in% years2),]
+  if(nrow(x2_years1)>0){
+    #x_shp$n_fat[[i]] <- sum(x1$FATALITIES)
+    #x_shp$n_evts[[i]] <- nrow(x1)
+    #x_shp$n_fat1124[[i]] <- sum(x2$FATALITIES)
+    #x_shp$n_evts1124[[i]] <- nrow(x2)
+     x_shp$n_fat1416[[i]] <- sum(x2_years1$FATALITIES)
+     x_shp$n_evts1416[[i]] <- nrow(x2_years1)
+    # x_shp$n_fat1921[[i]] <- sum(x2_years2$FATALITIES)
+    # x_shp$n_evts1921[[i]] <- nrow(x2_years2)
+    
+  } else {
+    #x_shp$n_fat[[i]] <- 0
+    #x_shp$n_evts[[i]] <- 0
+    #x_shp$n_fat1124[[i]] <- 0
+    #x_shp$n_evts1124[[i]] <-0
+    x_shp$n_fat1416[[i]] <- 0
+    x_shp$n_evts1416[[i]] <- 0
+    #x_shp$n_fat1921[[i]] <- 0
+    #x_shp$n_evts1921[[i]] <- 0
+  }
+  ##############################################################################
+  x2_years2 <- x2[which(x2$YEAR %in% years2),]
+  if(nrow(x2_years2)>0){
+    #x_shp$n_fat[[i]] <- sum(x1$FATALITIES)
+    #x_shp$n_evts[[i]] <- nrow(x1)
+    #x_shp$n_fat1124[[i]] <- sum(x2$FATALITIES)
+    #x_shp$n_evts1124[[i]] <- nrow(x2)
+    #x_shp$n_fat1416[[i]] <- sum(x2_years1$FATALITIES)
+    #x_shp$n_evts1416[[i]] <- nrow(x2_years1)
+     x_shp$n_fat1921[[i]] <- sum(x2_years2$FATALITIES)
+     x_shp$n_evts1921[[i]] <- nrow(x2_years2)
+    
+  } else {
+    #x_shp$n_fat[[i]] <- 0
+    #x_shp$n_evts[[i]] <- 0
+    #x_shp$n_fat1124[[i]] <- 0
+    #x_shp$n_evts1124[[i]] <-0
+    #x_shp$n_fat1416[[i]] <- 0
+    #x_shp$n_evts1416[[i]] <- 0
+    x_shp$n_fat1921[[i]] <- 0
+    x_shp$n_evts1921[[i]] <- 0
+  }
+  
 utils::setTxtProgressBar(pb, i)
 };rm(i)
 close(pb)
@@ -198,8 +261,45 @@ x_shp$n_fat_p <- (x_shp$n_fat/x_shp$pop2020_w)*1000
 #x_shp$n_fat_pop_t_w <- (x_shp$/x_shp$pop2020_worldpop)*1000
 x_shp$n_fat_p1123 <- (x_shp$n_fat1124/x_shp$pop2020_w)*1000
 ################################################################################
+##creating deforestation per entities per year
+YEARS_EACH <- 2011:2023
+x_data_series <- as.data.frame(matrix(ncol=14,nrow=nrow(x_shp)))
+
+pb <-
+  utils::txtProgressBar(min = 0,
+                        max =length(YEARS_EACH),
+                        style = 3)
 
 
+for(i in 1:length(YEARS_EACH)){
+#  i <- 1
+  x_i <- data2_or[which(data2_or$YEAR==YEARS_EACH[[i]]),]
+  
+  for(j in 1:nrow(x_shp)){
+   #i <- 1
+    x_j<- sf::st_intersection(x_i,x_shp[which(x_shp$GID_3==x_shp$GID_3[[j]]),])
+    if(length(x_j)>0){
+      x_data_series[j,i+1] <- nrow(x_j)
+    } else {
+      x_data_series[j,i+1] <- 0
+    }
+    #rm(x_j)
+  };rm(j)
+  #rm(x_i)
+  utils::setTxtProgressBar(pb, i)
+};rm(i)
+
+close(pb)
+
+x_time <- x_shp["GID_3"]
+x_time <- cbind(x_time,x_data_series)
+x_time$V1 <- NULL
+colnames(x_time) <- c("GID_3",YEARS_EACH,"geometry")
+sf::write_sf(x_time,"D:/CIAT_DEFORESTATION/RESULTS/n_evts_time.shp")
+################################################################################
+x_shp$n_evtsm1416 <- x_shp$n_evts1416/3
+x_shp$n_evtsm1921 <- x_shp$n_evts1921/3
+################################################################################
 #saving shapefile 
 x_shp2 <- x_shp
 colnames(x_shp2) <- abbreviate(colnames(x_shp),minlength = 8)

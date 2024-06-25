@@ -21,7 +21,7 @@ data_dir <- "D:/CIAT_DEFORESTATION/RESULTS"
 #check colors
 #MetBrewer::display_all()
 x_shp$LUC_emissions <- x_shp$LUC_emissions/1000
-x_shp$loss_m_p1120 <- x_shp$loss_m_p1120*100
+#x_shp$loss_m_p1120 <- x_shp$loss_m_p1120*100
 x_shp$livestock <- rowSums(cbind(x_shp$cattle_mean,x_shp$sheep_mean,x_shp$goat_mean),na.rm = T)
 
 ################################################################################
@@ -65,7 +65,15 @@ vars <- c(#"gain_2000-2020_ha",
   "n_fat_p",
   #"n_fat_pop_total_world",
   "n_fat_p1123",
-  "livestock"
+  "livestock",
+  "loss_m_p1416",
+  "loss_m_p1921",
+  "loss_m_1416",
+  "loss_m_1921",
+  "n_evts1416",
+  "n_evts1921",
+  "n_evtsm1416",
+  "n_evtsm1921"
 )
 
 captions <- c(#"Forest gain (ha) (2000-2020)",
@@ -108,7 +116,15 @@ captions <- c(#"Forest gain (ha) (2000-2020)",
   "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2020)",
   #"Death rate (UNDP estimate) (2011-2020)",
   "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2023)",
-  "Livestock (Cattle, goats ans sheep for 2015)"
+  "Livestock (Cattle, goats ans sheep for 2015)",
+  "Tree cover loss proportion (%) (Average: 2014-2016)",
+  "Tree cover loss proportion (%) (Average: 2019-2021)",
+  "Tree cover loss (km2) (Average: 2011-2020)",
+  "Tree cover loss (km2) (Average: 2011-2023)",
+  "Conflict events (farmers, fishers or pastoralists) (2014-2016)",
+  "Conflict events (farmers, fishers or pastoralists) (2019-2021)",
+  "Conflict events (farmers, fishers or pastoralists) (Average: 2014-2016)",
+  "Conflict events (farmers, fishers or pastoralists) (Average:2019-2021)"
 )
 
 pals <- c(#"gain_2000-2020_ha",
@@ -151,7 +167,15 @@ pals <- c(#"gain_2000-2020_ha",
   "OKeeffe2",
   #"n_fat_pop_total_world",
   "OKeeffe2",
-  "Hokusai3"
+  "Hokusai3",
+  "Derain",
+  "Derain",
+  "Ingres",
+  "Ingres",
+  "OKeeffe2",
+  "OKeeffe2",
+  "OKeeffe2",
+  "OKeeffe2"
 )
 ################################################################################
 options(scipen = 999)
@@ -160,8 +184,9 @@ for(i in 1:length(vars)){
   print(i)
   x_i <- x_shp[vars[[i]]]
   breaks <- as.data.frame(x_i[,vars[[i]]])[,1]
-  breaks[which(breaks==0)] <- NA
-  x_i[vars] <- breaks
+  #visualize cero
+  #breaks[which(breaks==0)] <- NA
+  #x_i[vars] <- breaks
   
   #x_i[vars[[1]]][which()] #NULL
   #breaks1 <- quantile(breaks)
@@ -172,8 +197,8 @@ for(i in 1:length(vars)){
     #scale_fill_gradientn(colors = rev(met.brewer('VanGogh3', 5))) +
     #scale_fill_gradientn(colors = rev(met.brewer('VanGogh3', 5))) +
       #scale_fill_gradientn(colors = met.brewer('VanGogh3', 5)) +
-    scale_fill_gradientn(colors = met.brewer(pals[[i]], 6),na.value = "grey40") +
-    geom_sf(data = x_shp1, fill = NA, col = 'white', lwd = 0.75) +
+    scale_fill_gradientn(colors = met.brewer(pals[[i]], 6),na.value = "white") +
+    geom_sf(data = x_shp1, fill = NA, col = 'white', lwd = 0.6) +
     # geom_sf(data = expn, fill = '#C7C7C7', col = 'white', lwd = 0.3) +
     # geom_sf(data = crgn, fill = 'grey70', col = '#E0E0E0', lwd = 0.3) + 
     # geom_sf(data = mpos, fill = '#FFFFFF', col = 'grey90', lwd = 0.3) +
@@ -248,8 +273,10 @@ png(file = "D:/CIAT_DEFORESTATION/RESULTS/CORRELATIONS.png",width = 1600,height 
  dev.off()
  ###############################################################################
  #saving excel file
- sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240617_2.csv", layer_options = "GEOMETRY=AS_XY",append = F,fid_column_name = "GID3")
- 
+ x_shp_exc <- x_shp
+ x_shp_exc$geometry <- NULL
+ #sf::st_write(x_shp, "D:/CIAT_DEFORESTATION/RESULTS/DATA_20240617_2.csv", layer_options = "GEOMETRY=AS_XY",append = F,fid_column_name = "GID3",)
+ write.xlsx(x_shp_exc,"D:/CIAT_DEFORESTATION/RESULTS/DATA_20240617_2.xlsx")
  ###############################################################################
  x_Cor <- cor(var_mat2,method = "spearman")
  #plot(hclust(as.dist(1-(x_Cor[-c(25),-c(25)])),method = "ward.D2"))
@@ -296,10 +323,15 @@ var_mat_selected <- var_df[,c(
                               "livestock",
                               "lud_45",
                               "loss_m_p1120",
+                              "loss_m_p1416",
+                              "loss_m_p1921",
                               "Grassland",
                               "Cropland",
-                              "n_evts")]
+                              "n_evts",
+                              "n_evtsm1416",
+                              "n_evtsm1921" )]
 var_mat_selected <- var_mat_selected[complete.cases(var_mat_selected),]
+colnames(var_mat_selected) [1:3] <- c("cattle","sheep","goat")
 png(file = "D:/CIAT_DEFORESTATION/RESULTS/CORRELATIONS_SELECTED.png",width = 1600,height = 1300,units = "px")
 corrplot( cor(var_mat_selected,method = "spearman"),
           #cor(var_mat2[,-c(24,25)],method = "spearman"),

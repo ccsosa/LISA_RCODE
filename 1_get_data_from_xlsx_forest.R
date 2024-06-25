@@ -96,12 +96,51 @@ raster_LU_List2 <- do.call(rbind,raster_LU_List)
 write.csv(raster_LU_List2,paste0(data_dir_COVER,"/KENYA_HANSSN_VALUES_ILRIC.csv"),row.names = F)
 #removing years 2010,2021,2022,2023
 raster_LU_List3 <- raster_LU_List2[which(raster_LU_List2$value>10),]
+################################################################################
+YEARS_EACH <- 11:23
+x_data_series_for <- as.data.frame(matrix(ncol=13,nrow=nrow(x_shp)))
+
+pb <-
+  utils::txtProgressBar(min = 0,
+                        max =length(YEARS_EACH),
+                        style = 3)
+
+
+for(i in 1:length(YEARS_EACH)){
+   # i <- 1
+  x_i <- raster_LU_List3[which(raster_LU_List3$value==YEARS_EACH[[i]]),]
+  
+  for(j in 1:nrow(x_shp)){
+    #j <- 1
+    x_j <- x_i[which(x_i$GID_3==x_shp$GID_3[[j]]),]
+    
+    if(nrow(x_j)>0){
+      x_data_series_for[j,i] <- x_j$area
+    } else {
+      x_data_series_for[j,i] <- NA
+    }
+    #rm(x_j)
+  };rm(j)
+  #rm(x_i)
+  utils::setTxtProgressBar(pb, i)
+};rm(i)
+
+close(pb)
+
+x_time_for <- x_shp["GID_3"]
+x_time_for <- cbind(x_time_for,x_data_series_for)
+colnames(x_time_for) <- c("GID_3",paste0("D_",YEARS_EACH),"geometry")
+sf::write_sf(x_time_for,"D:/CIAT_DEFORESTATION/RESULTS/deforestation_time.shp")
+
+################################################################################
 #raster_LU_List3 <- raster_LU_List3[which(raster_LU_List3$value<21),]
 #raster_LU_List4 <- raster_LU_List2
 
 years <- 11:23#unique(raster_LU_List3$value)
-years_sub <- 11:20
-years_sub2 <- 21:23
+years_sub <- 11:20 #2011 to 2020
+years_sub2 <- 21:23 #2021 to 2023
+years_sub3 <- 14:16
+years_sub4 <- 19:21
 df_to_see <- as.data.frame(matrix(ncol=length(years)+1,nrow = nrow(x_shp)))
 colnames(df_to_see) <- c("ADM2_PCODE",years)
 df_to_see[,1] <- x_shp$GID_3
@@ -131,28 +170,44 @@ df_to_see$mean_11_20 <- rowMeans(df_to_see[,as.character(years_sub)],na.rm = T)
 df_to_see$sd_11_20 <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years_sub)]),na.rm = T)
 df_to_see$median_11_20 <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years_sub)]),na.rm = T)
 df_to_see$sum_11_20 <- matrixStats::rowSums2(as.matrix(df_to_see[,as.character(years_sub)]),na.rm = T)
-###
+### 2011 to 2023
 df_to_see$mean_11_23 <- rowMeans(df_to_see[,as.character(years)],na.rm = T)
 df_to_see$sd_11_23 <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years)]),na.rm = T)
 df_to_see$median_11_23 <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years)]),na.rm = T)
 df_to_see$sum_11_23 <- matrixStats::rowSums2(as.matrix(df_to_see[,as.character(years)]),na.rm = T)
-
+#2021 to 2023
 df_to_see$mean_21_23 <- rowMeans(df_to_see[,as.character(years_sub2)],na.rm = T)
 df_to_see$sd_21_23 <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years_sub2)]),na.rm = T)
 df_to_see$median_21_23 <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years_sub2)]),na.rm = T)
 df_to_see$sum_21_23 <- matrixStats::rowSums2(as.matrix(df_to_see[,as.character(years_sub2)]),na.rm = T)
+#2014 to 2016
+df_to_see$mean_14_16 <- rowMeans(df_to_see[,as.character(years_sub3)],na.rm = T)
+df_to_see$sd_14_16 <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years_sub3)]),na.rm = T)
+df_to_see$median_14_16 <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years_sub3)]),na.rm = T)
+df_to_see$sum_14_16 <- matrixStats::rowSums2(as.matrix(df_to_see[,as.character(years_sub3)]),na.rm = T)
+#2019 to 2021
+#2014 to 2016
+df_to_see$mean_19_21 <- rowMeans(df_to_see[,as.character(years_sub4)],na.rm = T)
+df_to_see$sd_19_21 <- matrixStats::rowSds(as.matrix(df_to_see[,as.character(years_sub4)]),na.rm = T)
+df_to_see$median_19_21 <- matrixStats::rowMedians(as.matrix(df_to_see[,as.character(years_sub4)]),na.rm = T)
+df_to_see$sum__19_21 <- matrixStats::rowSums2(as.matrix(df_to_see[,as.character(years_sub4)]),na.rm = T)
 
 write.csv(df_to_see,paste0(data_dir_COVER,"/KENYA_HANSSEN_VALUES_WIDE_ILRIC.csv"),row.names = F,na = "")
 
 x_shp$loss_m1120 <- df_to_see$median_11_20
 x_shp$loss_m_p1120 <- (x_shp$loss_m1120/x_shp$area)#*(1/100)
-
 x_shp$loss_m1123 <- df_to_see$median_11_23
 x_shp$loss_m_p1123 <- (x_shp$loss_m1123/x_shp$area)#*(1/100)
 x_shp$loss_s1120 <- df_to_see$sum_11_20
 x_shp$loss_s1123 <- df_to_see$sum_11_23
 x_shp$loss_m_2123 <- df_to_see$median_21_23
-x_shp$loss_m_p2123 <-(x_shp$loss_m_p2123/x_shp$area)#*(1/100)
+x_shp$loss_m_p2123 <-(x_shp$loss_m_2123/x_shp$area)#*(1/100)
+x_shp$loss_m_1921 <- df_to_see$mean_19_21
+x_shp$loss_m_p1921 <- (x_shp$loss_m_1921/x_shp$area)
+
+x_shp$loss_m_p2123 <-(x_shp$loss_m_1921/x_shp$area)#*(1/100)
+x_shp$loss_m_1416 <- df_to_see$mean_14_16
+x_shp$loss_m_p1416 <-(x_shp$loss_m_1416/x_shp$area)#*(1/100)
 ################################################################################
 ###ADDING INFO FROM ABOVE GROUND BIOMASS (Mg/Ha()
 A1 <- terra::rast("D:/CIAT_DEFORESTATION/DATA/NEW/rasters/ILRI/AGB_2010.tif")  

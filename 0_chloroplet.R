@@ -2,8 +2,10 @@ rm(list = ls());gc()
 #load libraries
 require(biscale)
 require(sf)
-require(ggplot2)
 require(cowplot)
+#library(plotrix)
+library(gridExtra)
+
 #load data
 load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
 
@@ -59,9 +61,16 @@ vars <- c(#"gain_2000-2020_ha",
   #"n_fat_pop_total_world",
   "n_fat_p1123",
   "loss_m_p1120",
-  "livestock"
+  "livestock",
+  "loss_m_p1416",
+  "loss_m_p1921",
+  "loss_m_1416",
+  "loss_m_1921",
+  #"n_evts1416",
+  #"n_evts1921",
+  "n_evtsm1416",
+  "n_evtsm1921"
 )
-
 captions <- c(#"Forest gain (ha) (2000-2020)",
   "Tree cover loss (km2) (Median: 2011-2020)",
   "Tree cover loss (km2) (Median: 2011-2023)",
@@ -102,7 +111,15 @@ captions <- c(#"Forest gain (ha) (2000-2020)",
   #"Death rate (UNDP estimate) (2011-2020)",
   "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2023)",
   "Tree cover loss proportion (Median: 2011-2020)",
-  "Livestock (Cattle, goats ans sheep for 2015)"
+  "Livestock (Cattle, goats ans sheep for 2015)",
+  "Tree cover loss proportion (%) (Average: 2014-2016)",
+  "Tree cover loss proportion (%) (Average: 2019-2021)",
+  "Tree cover loss (km2) (Average: 2011-2020)",
+  "Tree cover loss (km2) (Average: 2011-2023)",
+  #"Conflict events (farmers, fishers or pastoralists) (2014-2016)",
+  #"Conflict events (farmers, fishers or pastoralists) (2019-2021)",
+  "Conflict events (farmers, fishers or pastoralists) (Average: 2014-2016)",
+  "Conflict events (farmers, fishers or pastoralists) (Average:2019-2021)"
 )
 
 ##################################################
@@ -138,13 +155,38 @@ chloro_function <- function(x_shp,
     x = "x",
     y = "y",
     style = "equal",
-    dim = 4
+    dim = 3
   )
   
-  
+  ##############################################################################
+  classes_to <- c("3-3","3-2","2-3","2-2")
+  labels_i <- list()
+  for(i in 1:length(classes_to)){
+    #i <- 1
+    x_i <- data[which(data$bi_class==classes_to[[i]]),]
+    x_i <- x_shp[row.names(x_i),c("NAME_1","NAME_2","NAME_3",var_to_x,var_to_y)]
+    x_i$geometry <- NULL
+    if(nrow(x_i)>0){
+      x_i$LABEL <- paste0("ADM1: ",x_i$NAME_1,";",
+                          "ADM2: ",x_i$NAME_2,"; ",
+                          "ADM3: ",x_i$NAME_3,"")
+      x_i <- x_i[order(-x_i[,var_to_x], x_i[,var_to_y]), ]
+      x_i <- x_i[c(1:2),]
+      x_i <- x_i[!is.na(x_i$LABEL),]
+      x_i$class <- classes_to[[i]]
+      labels_i[[i]] <- x_i
+    } 
+  }
+  labels_i <- do.call(rbind,labels_i)
+  labels_i <- data.frame(ADM3=labels_i$LABEL,
+                         Class=labels_i$class)
+  write.csv(labels_i,paste0(chl_folder,"/","TOP_",var_to_x, "_", var_to_y,".csv"),row.names = F)
+    ##############################################################################
   #plot(st_geometry(x_geom))
   
   # create map
+  
+  #x_bis <- bi_scale_fill(pal = palette_i, dim = 3,na.value = "white") 
   map <- ggplot2::ggplot() +
     geom_sf(
       data = data,
@@ -176,10 +218,20 @@ chloro_function <- function(x_shp,
   finalPlot <- cowplot::ggdraw() +
     draw_plot(map, 0, 0, 1, 1) +
     draw_plot(legend, 0.1, .65, 0.3, 0.3,scale = 1.2)
+  if(nrow(labels_i)>0){
+    finalPlot <- finalPlot +
+      
+      annotation_custom(tableGrob(labels_i, rows=NULL), xmin=-0.5, #xmax=6,
+                        ymin=-0.7)#,# ymax=800)
+    
+  } else {
+    finalPlot <- finalPlot 
+  }
   
   
-  #finalPlot
-  
+  # addtable2plot(x = 32,y = 7,labels_i,bty="o",display.rownames=F,hlines=F,
+  #               vlines=F,display.colnames = F,cex = 0.65)  
+  # 
   ggsave(
     plot = finalPlot,
     filename = paste0(chl_folder, "/", "CHL", var_to_x, "_", var_to_y, ".png"),
@@ -196,106 +248,33 @@ return("DONE!")
 ################################################################################
 ################################################################################
 #colnames(x_shp)
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1921'
 # #x
 # var_x <- 'ABG_2020'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 
 
-var_to_x  <- vars[4]
-var_to_y  <- vars[11]
-caption_x  <- captions[4]
-caption_y  <- captions[11]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Bluegill")
+# var_to_x  <- vars[4]
+# var_to_y  <- vars[33]
+# caption_x  <- captions[4]
+# caption_y  <- captions[33]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Bluegill")
 # ###############################################################################
-#colnames(x_shp)
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'ABG_10_20'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[3]
-var_to_y  <- vars[11]
-caption_x  <- captions[3]
-caption_y  <- captions[11]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "BlueYl")
-
-# ###############################################################################
-#x_shp$n_fat
-# var_y <- 'n_fat'
-# var_x <- 'loss_m1120'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[27]
-var_to_y  <- vars[11]
-caption_x  <- captions[27]
-caption_y  <- captions[11]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "PurpleOr")
-
-# ###############################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'cattle_mean'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[7]
-var_to_y  <- vars[11]
-caption_x  <- captions[7]
-caption_y  <- captions[11]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Brown")
-
-# ###############################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'lud_45'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[10]
-var_to_y  <- vars[11]
-caption_x  <- captions[10]
-caption_y  <- captions[11]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Brown")
-
-# ###############################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'pop2020_w'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-# var_to_x  <- vars[24]
+# #colnames(x_shp)
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'ABG_10_20'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[3]
 # var_to_y  <- vars[11]
-# caption_x  <- captions[24]
+# caption_x  <- captions[3]
 # caption_y  <- captions[11]
 # # 
 # chloro_function(x_shp,
@@ -303,17 +282,17 @@ chloro_function(x_shp,
 #                 var_to_x,
 #                 var_to_y,
 #                 caption_x,
-#                 caption_y)
+#                 caption_y,
+#                 "BlueYl")
 # 
-
-# ###############################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'LUC_emissions'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# var_to_x  <- vars[23]
+# # ###############################################################################
+# #x_shp$n_fat
+# # var_y <- 'n_fat'
+# # var_x <- 'loss_m1120'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[27]
 # var_to_y  <- vars[11]
-# caption_x  <- captions[23]
+# caption_x  <- captions[27]
 # caption_y  <- captions[11]
 # # 
 # chloro_function(x_shp,
@@ -321,16 +300,17 @@ chloro_function(x_shp,
 #                 var_to_x,
 #                 var_to_y,
 #                 caption_x,
-#                 caption_y)
-
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'lud_45'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# var_to_x  <- vars[5]
+#                 caption_y,
+#                 "PurpleOr")
+# 
+# # ###############################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'cattle_mean'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[7]
 # var_to_y  <- vars[11]
-# caption_x  <- captions[5]
+# caption_x  <- captions[7]
 # caption_y  <- captions[11]
 # # 
 # chloro_function(x_shp,
@@ -338,115 +318,187 @@ chloro_function(x_shp,
 #                 var_to_x,
 #                 var_to_y,
 #                 caption_x,
-#                 caption_y)
+#                 caption_y,
+#                 "Brown")
 # 
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'sheep_mean'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-var_to_x  <- vars[9]
-var_to_y  <- vars[11]
-caption_x  <- captions[9]
-caption_y  <- captions[11]
+# # ###############################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'lud_45'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[10]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[10]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Brown")
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Brown")
-
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'goat_mean'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[8]
-var_to_y  <- vars[11]
-caption_x  <- captions[8]
-caption_y  <- captions[11]
+# # ###############################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'pop2020_w'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Brown")
-
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'Cropland'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[18]
-var_to_y  <- vars[11]
-caption_x  <- captions[18]
-caption_y  <- captions[11]
+# # var_to_x  <- vars[24]
+# # var_to_y  <- vars[11]
+# # caption_x  <- captions[24]
+# # caption_y  <- captions[11]
+# # # 
+# # chloro_function(x_shp,
+# #                 x_shp1,
+# #                 var_to_x,
+# #                 var_to_y,
+# #                 caption_x,
+# #                 caption_y)
+# # 
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Bluegill")
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'loss_m_p1120'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[27]
-var_to_y  <- vars[11]
-caption_x  <- captions[27]
-caption_y  <- captions[11]
+# # ###############################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'LUC_emissions'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # var_to_x  <- vars[23]
+# # var_to_y  <- vars[11]
+# # caption_x  <- captions[23]
+# # caption_y  <- captions[11]
+# # # 
+# # chloro_function(x_shp,
+# #                 x_shp1,
+# #                 var_to_x,
+# #                 var_to_y,
+# #                 caption_x,
+# #                 caption_y)
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "PurpleOr")
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'Grassland'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[17]
-var_to_y  <- vars[11]
-caption_x  <- captions[17]
-caption_y  <- captions[11]
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'lud_45'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # var_to_x  <- vars[5]
+# # var_to_y  <- vars[11]
+# # caption_x  <- captions[5]
+# # caption_y  <- captions[11]
+# # # 
+# # chloro_function(x_shp,
+# #                 x_shp1,
+# #                 var_to_x,
+# #                 var_to_y,
+# #                 caption_x,
+# #                 caption_y)
+# # 
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'sheep_mean'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "PurpleOr")
-
-################################################################################
-# var_y <- 'n_fat'
-# #x
-# var_x <- 'livestock'
-# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[28]
-var_to_y  <- vars[11]
-caption_x  <- captions[28]
-caption_y  <- captions[11]
+# var_to_x  <- vars[9]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[9]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Brown")
 # 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "Brown")
-
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'goat_mean'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[8]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[8]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Brown")
+# 
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'Cropland'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[18]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[18]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Bluegill")
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'loss_m_p1120'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[27]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[27]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "PurpleOr")
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'Grassland'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[17]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[17]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "PurpleOr")
+# 
+# ################################################################################
+# # var_y <- 'n_fat'
+# # #x
+# # var_x <- 'livestock'
+# # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_to_x  <- vars[28]
+# var_to_y  <- vars[11]
+# caption_x  <- captions[28]
+# caption_y  <- captions[11]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "Brown")
+# 
 
 ################################################################################
 ################################################################################
@@ -456,16 +508,19 @@ chloro_function(x_shp,
 
 ################################################################################
 #colnames(x_shp)
-# var_y <- 'n_fat'
+# var_y <- 'n_evts'
 # #x
 # var_x <- 'ABG_2020'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-
+# var_to_x  <- vars[4]
+# var_to_y  <- vars[33]
+# caption_x  <- captions[4]
+# caption_y  <- captions[33]
+# # 
 var_to_x  <- vars[4]
-var_to_y  <- vars[12]
+var_to_y  <- vars[34]
 caption_x  <- captions[4]
-caption_y  <- captions[12]
+caption_y  <- captions[34]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -495,7 +550,7 @@ chloro_function(x_shp,
 
 # ###############################################################################
 #x_shp$n_fat
-# var_y <- 'n_fat'
+# var_y <- 'n_evts'
 # var_x <- 'loss_m1120'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[27]
@@ -510,16 +565,33 @@ chloro_function(x_shp,
                 caption_x,
                 caption_y,
                 "PurpleOr")
+################################################################################
+#x_shp$n_fat
+# var_y <- 'n_evts1921'
+# var_x <- 'loss_m_p1921'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+var_to_x  <- vars[30]
+var_to_y  <- vars[34]
+caption_x  <- captions[30]
+caption_y  <- captions[34]
+# 
+chloro_function(x_shp,
+                x_shp1,
+                var_to_x,
+                var_to_y,
+                caption_x,
+                caption_y,
+                "PurpleOr")
 
 # ###############################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1416'
 # #x
 # var_x <- 'cattle_mean'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[7]
-var_to_y  <- vars[12]
+var_to_y  <- vars[33]
 caption_x  <- captions[7]
-caption_y  <- captions[12]
+caption_y  <- captions[33]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -530,14 +602,14 @@ chloro_function(x_shp,
                 "Brown")
 
 # ###############################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1921'
 # #x
 # var_x <- 'lud_45'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[10]
-var_to_y  <- vars[12]
+var_to_y  <- vars[34]
 caption_x  <- captions[10]
-caption_y  <- captions[12]
+caption_y  <- captions[34]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -548,14 +620,31 @@ chloro_function(x_shp,
                 "Brown")
 
 # ###############################################################################
-# var_y <- 'n_evts'
+# var_y <- 'n_evts1416'
 # #x
 # var_x <- 'livestock'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[28]
-var_to_y  <- vars[12]
+var_to_y  <- vars[33]
 caption_x  <- captions[28]
-caption_y  <- captions[12]
+caption_y  <- captions[33]
+# 
+chloro_function(x_shp,
+                x_shp1,
+                var_to_x,
+                var_to_y,
+                caption_x,
+                caption_y,
+                "Brown")
+# ###############################################################################
+# var_y <- 'n_evts1921'
+# #x
+# var_x <- 'Grassland'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+var_to_x  <- vars[17]
+var_to_y  <- vars[34]
+caption_x  <- captions[17]
+caption_y  <- captions[34]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -618,15 +707,15 @@ chloro_function(x_shp,
 #                 caption_y)
 # 
 ################################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1416'
 # #x
 # var_x <- 'sheep_mean'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 
 var_to_x  <- vars[9]
-var_to_y  <- vars[12]
+var_to_y  <- vars[33]
 caption_x  <- captions[9]
-caption_y  <- captions[12]
+caption_y  <- captions[33]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -637,14 +726,14 @@ chloro_function(x_shp,
                 "Brown")
 
 ################################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1416'
 # #x
 # var_x <- 'goat_mean'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[8]
-var_to_y  <- vars[12]
+var_to_y  <- vars[33]
 caption_x  <- captions[8]
-caption_y  <- captions[12]
+caption_y  <- captions[33]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -655,14 +744,14 @@ chloro_function(x_shp,
                 "Brown")
 
 ################################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts1921'
 # #x
 # var_x <- 'Cropland'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 var_to_x  <- vars[18]
-var_to_y  <- vars[12]
+var_to_y  <- vars[34]
 caption_x  <- captions[18]
-caption_y  <- captions[12]
+caption_y  <- captions[34]
 # 
 chloro_function(x_shp,
                 x_shp1,
@@ -672,7 +761,7 @@ chloro_function(x_shp,
                 caption_y,
                 "Bluegill")
 ################################################################################
-# var_y <- 'n_fat'
+# var_y <- 'n_evts'
 # #x
 # var_x <- 'loss_m_p1120'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
@@ -694,18 +783,18 @@ chloro_function(x_shp,
 # #x
 # var_x <- 'Grassland'
 # LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-var_to_x  <- vars[17]
-var_to_y  <- vars[12]
-caption_x  <- captions[17]
-caption_y  <- captions[12]
-# 
-chloro_function(x_shp,
-                x_shp1,
-                var_to_x,
-                var_to_y,
-                caption_x,
-                caption_y,
-                "PurpleOr")
+# var_to_x  <- vars[17]
+# var_to_y  <- vars[12]
+# caption_x  <- captions[17]
+# caption_y  <- captions[12]
+# # 
+# chloro_function(x_shp,
+#                 x_shp1,
+#                 var_to_x,
+#                 var_to_y,
+#                 caption_x,
+#                 caption_y,
+#                 "PurpleOr")
 # var_y <- 'n_evts'
 # #x
 # var_x <- 'LUC_emissions'

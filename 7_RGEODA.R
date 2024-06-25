@@ -5,6 +5,8 @@ require(sf);require(matrixStats);require(parallel);
 require(ggpmisc)
 require(ggplot2);require(MetBrewer);require(corrplot);
 require(factoextra);require(FactoMineR);require(xlsx);require(rgeoda);library(car)
+library(plotrix)
+
 #data_dir <- "D:/CIAT_DEFORESTATION/RESULTS"
 #outdir
 #folder to save files
@@ -38,6 +40,10 @@ if(!dir.exists(paste0(out_dir,"/RAWS"))){
 if(!dir.exists(paste0(out_dir,"/SHP"))){
   dir.create(paste0(out_dir,"/SHP"))
 }
+#create top folder
+if(!dir.exists(paste0(out_dir,"/TOP"))){
+  dir.create(paste0(out_dir,"/TOP"))
+}
 ################################################################################
 #load
 load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
@@ -45,6 +51,7 @@ load("D:/CIAT_DEFORESTATION/RESULTS/6_FOREST_LU_LUIEMISS.RData")
 x_shp$LUC_emissions <- x_shp$LUC_emissions/1000
 
 x_shp$livestock <- rowSums(cbind(x_shp$cattle_mean,x_shp$sheep_mean,x_shp$goat_mean),na.rm = T)
+#x_shp$
 ################################################################################
 vars <- c(#"gain_2000-2020_ha",
   "loss_m1120",
@@ -86,7 +93,15 @@ vars <- c(#"gain_2000-2020_ha",
   "n_fat_p",
   #"n_fat_pop_total_world",
   "n_fat_p1123",
-  "livestock"
+  "livestock",
+  "loss_m_p1416",
+  "loss_m_p1921",
+  "loss_m_1416",
+  "loss_m_1921",
+  #"n_evts1416",
+  #"n_evts1921",
+  "n_evtsm1416",
+  "n_evtsm1921"
 )
 
 captions <- c(#"Forest gain (ha) (2000-2020)",
@@ -129,7 +144,15 @@ captions <- c(#"Forest gain (ha) (2000-2020)",
   "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2020)",
   #"Death rate (UNDP estimate) (2011-2020)",
   "Death rate farmers, fishers or pastoralists (UNDP estimate) (2011-2023)",
-  "Livestock (Cattle, goats ans sheep for 2015)"
+  "Livestock (Cattle, goats ans sheep for 2015)",
+  "Tree cover loss proportion (%) (Average: 2014-2016)",
+  "Tree cover loss proportion (%) (Average: 2019-2021)",
+  "Tree cover loss (km2) (Average: 2011-2020)",
+  "Tree cover loss (km2) (Average: 2011-2023)",
+  "Conflict events (farmers, fishers or pastoralists) (2014-2016)",
+  "Conflict events (farmers, fishers or pastoralists) (2019-2021)",
+  "Conflict events (farmers, fishers or pastoralists) (Average: 2014-2016)",
+  "Conflict events (farmers, fishers or pastoralists) (Average:2019-2021)"
 )
 
 options(scipen = 999)
@@ -180,9 +203,11 @@ data_to_moran <- data_to_moran[complete.cases(data_to_moran),]
 #subsetting shapefile with data available
 x_moran <- x_shp[x_shp$GID_3 %in% data_to_moran$GID_3,]
 x_moran$ID_i <- 1:nrow(x_moran)
+saveRDS(x_moran,paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".RDS"))
+#x_moran <- x_moran[c("GID_3",var_x,var_y)]
 
 #x_moran <- x_moran[c("GID_3","ID_i",var_x,var_y)]
-sf::write_sf(x_moran,paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".shp"))
+#sf::write_sf(x_moran,paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".shp"))
 queen_w <- rgeoda::queen_weights(x_moran)
 save_weights(queen_w, x_moran["ID_i"],#x_moran,
              out_path = paste0(out_dir,"/SHP/","LI_",var_x,"_",var_y,".gal"))
@@ -216,7 +241,7 @@ clrs <- setNames(rgeoda::lisa_colors(gda_lisa = qsa), nm = lbls)
 #fdr
 #get the LIS clusters
 cats <- rgeoda::lisa_clusters(gda_lisa = qsa)#, cutoff = fdr)
-
+####avoiding spurious clusters
 if(sum(cats)>0){
 #cats
 #validating clusters   
@@ -435,7 +460,39 @@ for(i in 1:length(lbls)){
 }
 
 names(clrs) <- lbls2
+################################################################################
+#top 5 high high
+cluster_unique = c(#"Not significant",
+           "High-High"#,
+           # "Low-Low",
+           # "High-Low",
+           # "Low-High"
+           #"Undefined",
+          # "Isolated" )
+)
 
+clust_list <- list()
+for(i in 1:length(cluster_unique)){
+  HH_Data <- x_data[which(x_data$CLUSTERS==cluster_unique[[i]]),]
+  HH_Data$geometry <- NULL
+  HH_Data <- HH_Data[order(-HH_Data[,var_to_x], HH_Data[,var_to_y]), ]
+  clust_list[[i]] <- HH_Data[c(1:5),]
+}
+
+clust_list <- do.call(rbind,clust_list)
+clust_list$LABEL <- paste0("ADM1: ",clust_list$NAME_1,";",
+                           "ADM2: ",clust_list$NAME_2,"; ",
+                           "ADM3: ",clust_list$NAME_3,"")
+clust_list <- clust_list[which(!is.na(clust_list$GID_3)),]
+clust_list_lab <- as.data.frame(clust_list[,10])
+
+#create raw folder
+
+write.csv(clust_list,paste0(out_dir,"/TOP","/","TOP_",var_to_x,"_",var_to_y,".csv"),
+          na = "",
+          row.names = F)
+#box_shp <- st_bbox(x_shp)
+################################################################################
 # #p values
 
 png(file =paste0(out_dir,"/PVAL/","LI_",var_to_x,"_",var_to_y,".png"),
@@ -444,8 +501,8 @@ png(file =paste0(out_dir,"/PVAL/","LI_",var_to_x,"_",var_to_y,".png"),
     units = "px",
     bg="white",
     res = 300)
+#par(mfrow = c(1, 2)) # Create a 2 x 2 plotting matrix
 par(mfrow = c(1, 2)) # Create a 2 x 2 plotting matrix
-
 
 plot(st_geometry(x_shp_copy),
      col=sapply(cats, function(x){return(lisa_colors(gda_lisa=qsa)[[x+1]])}),
@@ -457,6 +514,10 @@ plot(st_geometry(x_shp1),
 )
 legend('bottomleft', legend = lbls2, fill = clrs, border = "#eeeeee",cex = 0.8)
 
+addtable2plot(x = 32,y = 7,clust_list_lab,bty="o",display.rownames=F,hlines=F,
+              vlines=F,display.colnames = F,cex = 0.65)
+
+#second plot
 p_labels <- c("Not significant", "p <= 0.05", "p <= 0.01", "p <= 0.001")
 p_colors <- c("#eeeeee", "#84f576", "#53c53c", "#348124")
 
@@ -475,7 +536,7 @@ plot(st_geometry(x_shp1),
      border = "gray60", lwd=0.2,add=T
 )
  #title(main = paste("p values clusters for: ",caption_to_x,"and",caption_to_y))
- legend('bottomleft', legend = p_labels, fill = p_colors, border = "#eeeeee",cex = 0.8)
+ legend('bottomleft', legend = p_labels, fill = p_colors, border = "#eeeeee",cex = 0.7)
  
  
  title(main = paste("",caption_to_x,"and",caption_to_y, " I: ",round(mean(lms,na.rm=T),3)),
@@ -494,80 +555,81 @@ return("DONE!")
 ################################################################################
 ################################################################################
 ################################################################################
-#colnames(x_shp)
-var_y <- 'n_fat'
-#x
-var_x <- 'ABG_2020'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-#colnames(x_shp)
-var_y <- 'n_fat'
-#x
-var_x <- 'ABG_10_20'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-#x_shp$n_fat
-var_y <- 'n_fat'
-var_x <- 'loss_m1120'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'cattle_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-# ###############################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'pop2020_w'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-# ###############################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'LUC_emissions'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'sheep_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'goat_mean'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'Cropland'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'loss_m_p1120'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-################################################################################
-var_y <- 'n_fat'
-#x
-var_x <- 'livestock'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# #colnames(x_shp)
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'ABG_2020'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # ###############################################################################
+# #colnames(x_shp)
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'ABG_10_20'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # ###############################################################################
+# #x_shp$n_fat
+# var_y <- 'n_fat'
+# var_x <- 'loss_m1120'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # ###############################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'cattle_mean'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # ###############################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'lud_45'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# # ###############################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'pop2020_w'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 
+# # ###############################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'LUC_emissions'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'lud_45'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'sheep_mean'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'goat_mean'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'Cropland'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'loss_m_p1120'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# ################################################################################
+# var_y <- 'n_fat'
+# #x
+# var_x <- 'livestock'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
 ################################################################################
 ################################################################################
 #events
 #colnames(x_shp)
-var_y <- 'n_evts'
+#var_y <- 'n_evts'
+var_y <- 'n_evtsm1921'
 #x
 var_x <- 'ABG_2020'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
@@ -583,43 +645,43 @@ var_y <- 'n_evts'
 var_x <- 'loss_m1120'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1416'
 #x
 var_x <- 'cattle_mean'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1921'
 #x
 var_x <- 'lud_45'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 # ###############################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'pop2020_w'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
-
+# var_y <- 'n_evts'
+# #x
+# var_x <- 'pop2020_w'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# 
 # ###############################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1921'
 #x
 var_x <- 'LUC_emissions'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
-var_y <- 'n_evts'
-#x
-var_x <- 'lud_45'
-LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+# var_y <- 'n_evts'
+# #x
+# var_x <- 'lud_45'
+# LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1416'
 #x
 var_x <- 'sheep_mean'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1416'
 #x
 var_x <- 'goat_mean'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
-var_y <- 'n_evts'
+var_y <- "n_evtsm1921"
 #x
 var_x <- 'Cropland'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
@@ -629,7 +691,12 @@ var_y <- 'n_evts'
 var_x <- 'loss_m_p1120'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
 ################################################################################
-var_y <- 'n_evts'
+var_y <- 'n_evtsm1416'
 #x
 var_x <- 'livestock'
+LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
+################################################################################
+var_y <- 'n_evtsm1921'
+#x
+var_x <- 'Grassland'
 LISA_MULTI(var_x,var_y,out_dir,x_shp,vars,captions)
